@@ -115,7 +115,7 @@ function BluetoothView({ navigation }: Props): React.JSX.Element {
   };
 
   const handleConnectPeripheral = (event: any) => {
-    openSnack(`${event.peripheral.name} connected.`);
+    openSnack(`${event.peripheral} connected.`);
     console.log(`[handleConnectPeripheral][${event.peripheral}] connected.`);
   };
 
