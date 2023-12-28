@@ -8,6 +8,13 @@ buildscript {
         kotlinVersion = "1.8.0"
     }
     repositories {
+        maven { url 'https://maven.aliyun.com/nexus/content/repositories/google' }
+        maven {
+          url 'https://maven.aliyun.com/repository/public/'
+        }
+        maven {
+          url 'https://maven.aliyun.com/repository/central'
+        }
         google()
         mavenCentral()
     }
