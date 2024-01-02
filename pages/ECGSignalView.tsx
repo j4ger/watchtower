@@ -9,7 +9,7 @@ import { RootStackParamList } from "../App";
 import { BLEData, decodePacket } from "../utils/BLEData";
 import { DeviceContext, DeviceContextType } from "../utils/device";
 
-const BUFFER_SIZE = 100;
+const BUFFER_SIZE = 200;
 
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
@@ -31,20 +31,20 @@ function ECGSignalView({ navigation }: Props): React.JSX.Element {
 
   const graphRef = useRef<ReanimatedGraphPublicMethods>(null);
 
-  let xData: number[] = [0, 1];
-  let yData: number[] = [0, 0];
+  let xData: number[] = [];
+  let yData: number[] = [];
+  let i = 0;
+  while (i < BUFFER_SIZE) {
+    xData.push(i);
+    yData.push(50);
+    i++;
+  }
   const pushData = (newData: BLEData) => {
-    let x, y;
-    if (xData.length < BUFFER_SIZE) {
-      x = [...xData, newData.timestamp];
-      y = [...yData, newData.value];
-    } else {
-      x = [...xData.slice(1), newData.timestamp];
-      y = [...yData.slice(1), newData.value];
-    }
-    xData = x;
+    // let x = [...xData.slice(1), newData.timestamp];
+    let y = [...yData.slice(1), newData.value];
+    // xData = x;
     yData = y;
-    graphRef.current?.updateData({ xAxis: x, yAxis: y });
+    graphRef.current?.updateData({ xAxis: xData, yAxis: y });
   };
 
   let { device, setDevice } = useContext(DeviceContext) as DeviceContextType;
@@ -91,7 +91,6 @@ function ECGSignalView({ navigation }: Props): React.JSX.Element {
         xAxis={xData}
         yAxis={yData}
         animated={false}
-        type="line"
         showExtremeValues={false}
         color={lineColor}
       />
@@ -100,7 +99,7 @@ function ECGSignalView({ navigation }: Props): React.JSX.Element {
 }
 
 const colorScheme = Appearance.getColorScheme();
-const lineColor = colorScheme === "dark" ? "#FFFFFF" : "#000000";
+const lineColor = (colorScheme === "dark") ? "#FFFFFF" : "#000000";
 const styles = StyleSheet.create({});
 
 export default ECGSignalView;

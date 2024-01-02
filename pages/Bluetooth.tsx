@@ -16,7 +16,7 @@ import BleManager, {
   BleScanMode,
   Peripheral,
 } from "react-native-ble-manager";
-import { Button, IconButton, List, Modal, Portal, Snackbar, Surface, Text } from "react-native-paper";
+import { FAB, IconButton, List, Modal, Portal, Snackbar, Surface, Text } from "react-native-paper";
 import { RootStackParamList } from "../App";
 import { DeviceContext, DeviceContextType } from "../utils/device";
 
@@ -385,19 +385,13 @@ function BluetoothView({ navigation }: Props): React.JSX.Element {
 
   return (
     <>
-      <Button
-        icon={isScanning ? "" : "reload"}
-        mode="contained"
-        style={styles.button}
+      <FAB
+        icon={isScanning ? "dots-horizontal" : "reload"}
+        mode="elevated"
+        style={styles.FAB}
         onPress={startScan}
         disabled={isScanning}
-      >
-        {isScanning ? "Scanning..." : "Scan Bluetooth"}
-      </Button>
-
-      <Button icon="view-list" mode="outlined" onPress={retrieveConnected}>
-        {"Retrieve connected peripherals"}
-      </Button>
+      />
 
       <List.Section>
         <List.Subheader style={styles.align}>
@@ -465,8 +459,14 @@ function BluetoothView({ navigation }: Props): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
+  FAB: {
+    position: "absolute",
+    margin: 16,
+    right: 0,
+    bottom: 0,
+  },
   button: {
-    marginBottom: 2,
+    marginTop: 2,
   },
   align: {
     alignContent: "center",

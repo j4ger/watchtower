@@ -2,8 +2,8 @@ import { getHeaderTitle } from "@react-navigation/elements";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator, NativeStackHeaderProps } from "@react-navigation/native-stack";
 import React, { useState } from "react";
-import { StyleSheet } from "react-native";
-import { Appbar, PaperProvider } from "react-native-paper";
+import { StyleSheet, useColorScheme } from "react-native";
+import { adaptNavigationTheme, Appbar, MD3DarkTheme, MD3LightTheme, PaperProvider } from "react-native-paper";
 import { Toast } from "react-native-toast-message/lib/src/Toast";
 import BluetoothView from "./pages/Bluetooth";
 import ECGSignalView from "./pages/ECGSignalView";
@@ -12,6 +12,11 @@ import { BLEDevice, DeviceContext } from "./utils/device";
 export type RootStackParamList = { Bluetooth: undefined; ECGSignal: undefined };
 
 function App(): React.JSX.Element {
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === "dark";
+
+  const theme = isDarkMode ? MD3DarkTheme : MD3LightTheme;
+
   const Stack = createNativeStackNavigator();
 
   const [device, setDevice] = useState<BLEDevice | null>(null);
@@ -21,7 +26,7 @@ function App(): React.JSX.Element {
 
   return (
     <DeviceContext.Provider value={{ device, setDevice: setDeviceWrapper }}>
-      <PaperProvider>
+      <PaperProvider theme={theme}>
         <NavigationContainer>
           <Stack.Navigator
             initialRouteName="Bluetooth"
