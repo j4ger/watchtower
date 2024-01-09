@@ -16,9 +16,10 @@ import BleManager, {
   BleScanMode,
   Peripheral,
 } from "react-native-ble-manager";
-import { FAB, IconButton, List, Modal, Portal, Snackbar, Surface, Text } from "react-native-paper";
+import { FAB, IconButton, List, Modal, Portal, Surface, Text } from "react-native-paper";
+import { Toast } from "react-native-toast-message/lib/src/Toast";
 import { RootStackParamList } from "../App";
-import { DeviceContext, DeviceContextType } from "../utils/device";
+import { BLEDevice, DeviceContext, DeviceContextType } from "../utils/Device";
 
 const SECONDS_TO_SCAN_FOR = 3;
 const SERVICE_UUIDS: string[] = [];
@@ -31,7 +32,6 @@ const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
 declare module "react-native-ble-manager" {
-  // enrich local contract with custom state properties needed by App.tsx
   interface Peripheral {
     connected?: boolean;
     connecting?: boolean;
@@ -49,14 +49,6 @@ function BluetoothView({ navigation }: Props): React.JSX.Element {
   };
   const closeModal = () => {
     setModal(null);
-  };
-
-  const [snack, setSnack] = useState<string | null>(null);
-  const openSnack = (message: string) => {
-    setSnack(message);
-  };
-  const closeSnack = () => {
-    setSnack(null);
   };
 
   const [isScanning, setIsScanning] = useState(false);
@@ -83,11 +75,14 @@ function BluetoothView({ navigation }: Props): React.JSX.Element {
             // console.debug("[startScan] scan promise returned successfully.");
           })
           .catch((error: any) => {
-            openSnack(`Error occurred while scanning BLE: ${error}`);
+            Toast.show({ type: "error", text1: `Error occurred while scanning BLE: ${error}` });
             console.error("[startScan] ble scan returned in error", error);
           });
       } catch (error) {
-        openSnack(`Error occurred while scanning BLE: ${error}`);
+        Toast.show({
+          type: "error",
+          text1: `Error occurred while scanning BLE: ${error}`,
+        });
         console.error("[startScan] ble scan error thrown", error);
       }
     }
@@ -115,7 +110,7 @@ function BluetoothView({ navigation }: Props): React.JSX.Element {
   };
 
   const handleConnectPeripheral = (event: any) => {
-    openSnack(`${event.peripheral} connected.`);
+    Toast.show({ type: "info", text1: `${event.peripheral} connected.` });
     console.log(`[handleConnectPeripheral][${event.peripheral}] connected.`);
   };
 
@@ -211,7 +206,7 @@ function BluetoothView({ navigation }: Props): React.JSX.Element {
         //   `[connectPeripheral][${peripheral.id}] retrieved current RSSI value: ${rssi}.`,
         // );
 
-        let validDevice = null;
+        let validDevice: BLEDevice | null = null;
 
         if (peripheralData.characteristics) {
           for (let characteristic of peripheralData.characteristics) {
@@ -259,16 +254,23 @@ function BluetoothView({ navigation }: Props): React.JSX.Element {
           return map;
         });
         if (!validDevice) {
-          openSnack("Invalid device.");
+          Toast.show({ type: "error", text1: "Invalid device." });
           BleManager.disconnect(peripheral.id);
         } else {
-          setDevice(validDevice);
-          await BleManager.startNotification(
-            validDevice!.peripheral,
-            validDevice!.service,
-            validDevice!.characteristic,
-          );
-          navigation.push("ECGSignal");
+          BleManager.requestMTU(validDevice!.peripheral, 512)
+            .then(async (mtu) => {
+              Toast.show({ type: "info", text1: `MTU size changed to ${mtu} bytes.` });
+              setDevice(validDevice);
+              await BleManager.startNotification(
+                validDevice!.peripheral,
+                validDevice!.service,
+                validDevice!.characteristic,
+              );
+              navigation.push("ECGSignal");
+            })
+            .catch((error) => {
+              Toast.show({ type: "error", text1: "Failed to set MTU: ${error}" });
+            });
         }
       }
     } catch (error) {
@@ -426,7 +428,7 @@ function BluetoothView({ navigation }: Props): React.JSX.Element {
                 />
               </>
             )}
-            right={props => (
+            right={() => (
               <>
                 {peripheral.connected
                   ? (
@@ -451,9 +453,6 @@ function BluetoothView({ navigation }: Props): React.JSX.Element {
           </Surface>
         </Modal>
       </Portal>
-      <Snackbar visible={snack != null} onDismiss={closeSnack} action={{ label: "OK", onPress: closeSnack }}>
-        {snack}
-      </Snackbar>
     </>
   );
 }

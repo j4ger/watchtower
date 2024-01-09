@@ -3,18 +3,19 @@ export interface BLEData {
   value: number;
 }
 
-export function decodePacket(data: number[]): BLEData {
-  let timestamp = 0, value = 0;
+export function decodePacket(data: number[]): BLEData[] {
+  const result = [];
+
+  const dataView = new DataView(new Uint8Array(data).buffer);
 
   let i = 0;
-  while (i < 4) {
-    timestamp += data[i] << (i * 8);
-    i++;
-  }
-  while (i < 8) {
-    value += data[i] << ((i - 4) * 8);
+  while (i < data.length / 8) {
+    const timestamp = dataView.getUint32(i * 8 + 0);
+    const value = dataView.getFloat32(i * 8 + 4);
+
+    result.push({ timestamp, value });
     i++;
   }
 
-  return { timestamp, value };
+  return result;
 }

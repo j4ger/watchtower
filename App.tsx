@@ -7,7 +7,7 @@ import { adaptNavigationTheme, Appbar, MD3DarkTheme, MD3LightTheme, PaperProvide
 import { Toast } from "react-native-toast-message/lib/src/Toast";
 import BluetoothView from "./pages/Bluetooth";
 import ECGSignalView from "./pages/ECGSignalView";
-import { BLEDevice, DeviceContext } from "./utils/device";
+import { BLEDevice, DeviceContext } from "./utils/Device";
 
 export type RootStackParamList = { Bluetooth: undefined; ECGSignal: undefined };
 
