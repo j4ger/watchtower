@@ -26,7 +26,7 @@ import QRSDetector, { SAMPLE_RATE } from "../utils/QRSDetector";
 const BUFFER_SIZE = 600;
 const BLANK_SIZE = 50;
 const LINE_COLOR = "green";
-const DELAY_MS = 1;
+const DELAY_MS = 1000 / SAMPLE_RATE;
 const MAX_QUEUE = 500;
 const UPDATE_RATIO = 0.8;
 
@@ -149,14 +149,16 @@ function ECGSignalView({ navigation }: Props): React.JSX.Element {
     if (queue.length > 0) {
       const { timestamp, value } = queue.shift()!;
       let cursor = timestamp % BUFFER_SIZE;
+      const wipeCursor = cursor + BLANK_SIZE;
       data[cursor] = [cursor, value];
 
-      const prev = data.slice(cursor + BLANK_SIZE);
+      const prev = data.slice(wipeCursor);
       const next = data.slice(0, cursor);
 
       const QRSResult = QRSDetector(value, [...prev, ...next]);
 
-      if (cursor == markers[0]?.xAxis) {
+      const oldestMarker = markers[0]?.xAxis;
+      if (cursor == oldestMarker || wipeCursor == oldestMarker) {
         markers.shift();
       }
 
