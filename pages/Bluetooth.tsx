@@ -111,7 +111,7 @@ function BluetoothView({ navigation }: Props): React.JSX.Element {
 
   const handleConnectPeripheral = (event: any) => {
     Toast.show({ type: "info", text1: `${event.peripheral} connected.` });
-    console.log(`[handleConnectPeripheral][${event.peripheral}] connected.`);
+    // console.log(`[handleConnectPeripheral][${event.peripheral}] connected.`);
   };
 
   const handleUpdateValueForCharacteristic = (

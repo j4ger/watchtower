@@ -197,10 +197,6 @@ function ECGSignalView({ navigation }: Props): React.JSX.Element {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    console.log(`rate: ${beatRate}`);
-  }, [beatRate]);
-
   return (
     <>
       <GestureHandlerRootView style={{ flex: 1 }}>
