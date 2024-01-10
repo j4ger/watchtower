@@ -38,7 +38,7 @@ function App(): React.JSX.Element {
             <Stack.Screen name="ECGSignal" component={ECGSignalView} options={{ title: "View ECG signal" }} />
           </Stack.Navigator>
         </NavigationContainer>
-        <Toast />
+        <Toast position="bottom" onPress={() => Toast.hide()} />
       </PaperProvider>
     </DeviceContext.Provider>
   );
