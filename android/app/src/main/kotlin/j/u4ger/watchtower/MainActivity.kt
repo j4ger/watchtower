@@ -1,4 +1,4 @@
-package j.u4ger.watchtower
+package j4g.er.watchtower
 
 import io.flutter.embedding.android.FlutterActivity
 
