@@ -7,20 +7,40 @@ import 'package:circular_buffer/circular_buffer.dart';
 import 'package:convert/convert.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart';
 import 'package:watchtower/bluetooth_device.dart';
 import 'package:watchtower/ecg_data.dart';
 
+const bufferLength = 800;
 const plotLength = 500;
+const delayMs = 200;
+const packLength = 50;
+const moveForwardInterval = 23.5;
+const minDataCount = plotLength + 2 * packLength;
 
 class CircularBufferNotifier<T> extends ValueNotifier<CircularBuffer<T>> {
   late final CircularBuffer<T> _buffer;
 
   CircularBufferNotifier(super.buffer) : _buffer = buffer;
 
+  void fill(T item) {
+    _buffer.fillRange(0, _buffer.length, item);
+  }
+
   void add(T item) {
     _buffer.add(item);
 
+    notifyListeners();
+  }
+
+  void extend(List<T> items) {
+    for (T item in items) {
+      _buffer.add(item);
+    }
+  }
+
+  void update() {
     notifyListeners();
   }
 }
@@ -47,8 +67,12 @@ class _SignalPageState extends State<SignalPage> {
   late final StreamSubscription connectionStateChangedSubscription;
   late final StreamSubscription characteristicNotifiedSubscription;
 
-  late final CircularBufferNotifier<ECGData> plotData;
+  late final CircularBufferNotifier<ECGData> dataBuffer;
+
+  late final Timer _moveForwardTimer;
+
   double plotEnd = 0;
+  int plotIndexStart = 0;
 
   @override
   void initState() {
@@ -60,7 +84,7 @@ class _SignalPageState extends State<SignalPage> {
     service = ValueNotifier(null);
     characteristic = ValueNotifier(null);
 
-    plotData = CircularBufferNotifier(CircularBuffer(plotLength));
+    dataBuffer = CircularBufferNotifier(CircularBuffer(bufferLength));
 
     connectionStateChangedSubscription =
         CentralManager.instance.connectionStateChanged.listen(
@@ -86,12 +110,21 @@ class _SignalPageState extends State<SignalPage> {
         }
         final packet = eventArgs.value;
         final data = ECGData.fromPacket(packet);
-        for (var each in data) {
-          plotData.add(each);
-        }
-        plotEnd = plotData.value.last.x;
+        plotEnd = data.last.x;
+        plotIndexStart = 0;
+        dataBuffer.extend(data);
       },
     );
+
+    initTimer();
+  }
+
+  void initTimer() {
+    _moveForwardTimer = Timer.periodic(
+        Duration(milliseconds: moveForwardInterval.floor()), (timer) {
+      plotIndexStart = plotIndexStart + 1;
+      dataBuffer.update();
+    });
   }
 
   void connect(BuildContext context) async {
@@ -125,15 +158,17 @@ class _SignalPageState extends State<SignalPage> {
     }
     await CentralManager.instance
         .setCharacteristicNotifyState(target, state: true);
+
+    initTimer();
   }
 
   void disconnect(BuildContext context) async {
+    _moveForwardTimer.cancel();
     await CentralManager.instance.disconnect(eventArgs.peripheral).onError(
       (error, stackTrace) {
         _showAlert(context, "Failed to disconnect device: $error.");
       },
     );
-
     services.value = [];
   }
 
@@ -184,26 +219,60 @@ class _SignalPageState extends State<SignalPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ValueListenableBuilder(
-              valueListenable: plotData,
-              builder: (context, plotData, child) {
-                return plotData.isNotEmpty
-                    ? Container(
+            valueListenable: dataBuffer,
+            builder: (context, dataBuffer, child) {
+              return dataBuffer.length < minDataCount
+                  ? TweenAnimationBuilder(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeInOut,
+                      tween: Tween<double>(
+                          begin: 0, end: dataBuffer.length / minDataCount),
+                      builder: (context, value, child) =>
+                          LinearProgressIndicator(value: value))
+                  : Container();
+            },
+          ),
+          ValueListenableBuilder(
+              valueListenable: dataBuffer,
+              builder: (context, dataBuffer, child) {
+                return (dataBuffer.length < minDataCount)
+                    ? const Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: Center(
+                          child: SpinKitRing(
+                            color: Colors.lightBlueAccent,
+                          ),
+                        ))
+                    : Container(
+                        padding: const EdgeInsets.all(8.0),
                         width: 400,
-                        height: 400,
-                        child: LineChart(LineChartData(
+                        height: 200,
+                        child: LineChart(
+                          duration: Duration.zero,
+                          LineChartData(
                             minY: -2,
                             maxY: 3,
-                            minX: plotEnd - plotLength,
-                            maxX: plotEnd,
+                            minX: plotEnd - dataBuffer.length + plotIndexStart,
+                            maxX: plotEnd -
+                                dataBuffer.length +
+                                plotLength +
+                                plotIndexStart,
                             lineTouchData: const LineTouchData(enabled: false),
                             lineBarsData: [
                               LineChartBarData(
-                                  spots: plotData,
+                                  spots: dataBuffer
+                                      .getRange(plotIndexStart,
+                                          plotIndexStart + plotLength)
+                                      .toList(growable: false), // toList?
                                   dotData: const FlDotData(show: false),
                                   barWidth: 1,
                                   isCurved: false)
-                            ])))
-                    : Container();
+                            ],
+                            gridData: const FlGridData(show: false),
+                            titlesData: const FlTitlesData(show: false),
+                            clipData: const FlClipData.all(),
+                          ),
+                        ));
               })
         ],
       ),
@@ -254,6 +323,9 @@ class _SignalPageState extends State<SignalPage> {
   @override
   void dispose() {
     super.dispose();
+
+    _moveForwardTimer.cancel();
+
     connectionStateChangedSubscription.cancel();
     characteristicNotifiedSubscription.cancel();
     connectionState.dispose();
@@ -262,6 +334,8 @@ class _SignalPageState extends State<SignalPage> {
     service.dispose();
     characteristic.dispose();
 
-    plotData.dispose();
+    dataBuffer.dispose();
   }
 }
+
+// TODO: alternative method: plot all the data and only change minX and maxX

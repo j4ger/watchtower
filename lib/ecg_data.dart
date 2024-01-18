@@ -17,3 +17,5 @@ class ECGData extends FlSpot {
     return result;
   }
 }
+
+// TODO: push directly into buffer
