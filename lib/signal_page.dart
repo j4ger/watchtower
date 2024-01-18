@@ -1,23 +1,19 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:bluetooth_low_energy/bluetooth_low_energy.dart';
 import 'package:circular_buffer/circular_buffer.dart';
-import 'package:convert/convert.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:intl/intl.dart';
 import 'package:watchtower/bluetooth_device.dart';
+import 'package:watchtower/detector.dart';
 import 'package:watchtower/ecg_data.dart';
 
-const bufferLength = 800;
-const plotLength = 500;
+const bufferLength = 600;
+const plotLength = 300;
 const delayMs = 200;
 const packLength = 50;
-const moveForwardInterval = 23.5;
-const minDataCount = plotLength + 2 * packLength;
+const moveForwardInterval = 13;
+const minDataCount = bufferLength;
 
 class CircularBufferNotifier<T> extends ValueNotifier<CircularBuffer<T>> {
   late final CircularBuffer<T> _buffer;
@@ -68,11 +64,15 @@ class _SignalPageState extends State<SignalPage> {
   late final StreamSubscription characteristicNotifiedSubscription;
 
   late final CircularBufferNotifier<ECGData> dataBuffer;
+  List<VerticalLine> annotations = [];
+
+  late final ValueNotifier<int?> heartRate;
+
+  final _detector = QRSDetector(250, 0.9);
 
   late final Timer _moveForwardTimer;
 
-  double plotEnd = 0;
-  int plotIndexStart = 0;
+  double plotStart = 0;
 
   @override
   void initState() {
@@ -85,6 +85,7 @@ class _SignalPageState extends State<SignalPage> {
     characteristic = ValueNotifier(null);
 
     dataBuffer = CircularBufferNotifier(CircularBuffer(bufferLength));
+    heartRate = ValueNotifier(null);
 
     connectionStateChangedSubscription =
         CentralManager.instance.connectionStateChanged.listen(
@@ -110,19 +111,20 @@ class _SignalPageState extends State<SignalPage> {
         }
         final packet = eventArgs.value;
         final data = ECGData.fromPacket(packet);
-        plotEnd = data.last.x;
-        plotIndexStart = 0;
         dataBuffer.extend(data);
+        plotStart = dataBuffer.value.first.x;
+        if (dataBuffer.value.isFilled) {
+          annotations = _detector.detect(dataBuffer.value);
+          heartRate.value = _detector.heartRate?.floor();
+        }
       },
     );
-
-    initTimer();
   }
 
   void initTimer() {
     _moveForwardTimer = Timer.periodic(
         Duration(milliseconds: moveForwardInterval.floor()), (timer) {
-      plotIndexStart = plotIndexStart + 1;
+      plotStart += 1;
       dataBuffer.update();
     });
   }
@@ -235,45 +237,76 @@ class _SignalPageState extends State<SignalPage> {
           ValueListenableBuilder(
               valueListenable: dataBuffer,
               builder: (context, dataBuffer, child) {
-                return (dataBuffer.length < minDataCount)
-                    ? const Padding(
-                        padding: EdgeInsets.only(top: 8),
-                        child: Center(
-                          child: SpinKitRing(
-                            color: Colors.lightBlueAccent,
-                          ),
-                        ))
+                return dataBuffer.length < minDataCount
+                    ? Container()
                     : Container(
-                        padding: const EdgeInsets.all(8.0),
+                        decoration: BoxDecoration(
+                            boxShadow: const [
+                              BoxShadow(
+                                  color: Color.fromRGBO(0x47, 0x66, 0xf4, 0.3),
+                                  spreadRadius: 2,
+                                  blurRadius: 3,
+                                  offset: Offset(0, 1))
+                            ],
+                            borderRadius: BorderRadius.circular(6),
+                            border: null,
+                            gradient: const LinearGradient(
+                                begin: Alignment.topRight,
+                                end: Alignment.bottomLeft,
+                                stops: [
+                                  0.05,
+                                  0.95,
+                                ],
+                                colors: [
+                                  Color.fromRGBO(0x24, 0x2a, 0xcf, 1),
+                                  Color.fromRGBO(0x52, 0x57, 0xd5, 0.5),
+                                ])),
+                        margin: const EdgeInsets.all(8.0),
                         width: 400,
                         height: 200,
                         child: LineChart(
                           duration: Duration.zero,
                           LineChartData(
-                            minY: -2,
-                            maxY: 3,
-                            minX: plotEnd - dataBuffer.length + plotIndexStart,
-                            maxX: plotEnd -
-                                dataBuffer.length +
-                                plotLength +
-                                plotIndexStart,
+                            minY: -1,
+                            maxY: 2,
+                            minX: plotStart,
+                            maxX: plotStart + plotLength,
                             lineTouchData: const LineTouchData(enabled: false),
                             lineBarsData: [
                               LineChartBarData(
-                                  spots: dataBuffer
-                                      .getRange(plotIndexStart,
-                                          plotIndexStart + plotLength)
-                                      .toList(growable: false), // toList?
+                                  spots: dataBuffer,
                                   dotData: const FlDotData(show: false),
-                                  barWidth: 1,
+                                  barWidth: 3,
+                                  isStrokeCapRound: true,
+                                  // gradient: LinearGradient(colors: [
+                                  //   Colors.white.withOpacity(0),
+                                  //   Colors.white
+                                  // ], stops: const [
+                                  //   0.05,
+                                  //   0.25
+                                  // ]),
+                                  color: Colors.white,
                                   isCurved: false)
                             ],
+                            extraLinesData:
+                                ExtraLinesData(verticalLines: annotations),
+                            borderData: FlBorderData(
+                              show: false,
+                            ),
                             gridData: const FlGridData(show: false),
                             titlesData: const FlTitlesData(show: false),
                             clipData: const FlClipData.all(),
                           ),
                         ));
-              })
+              }),
+          ValueListenableBuilder(
+            valueListenable: heartRate,
+            builder: (context, heartRate, child) => heartRate == null
+                ? Container()
+                : Center(
+                    child: Text(heartRate.toString()),
+                  ),
+          )
         ],
       ),
     );
@@ -322,8 +355,6 @@ class _SignalPageState extends State<SignalPage> {
 
   @override
   void dispose() {
-    super.dispose();
-
     _moveForwardTimer.cancel();
 
     connectionStateChangedSubscription.cancel();
@@ -335,7 +366,10 @@ class _SignalPageState extends State<SignalPage> {
     characteristic.dispose();
 
     dataBuffer.dispose();
+
+    super.dispose();
   }
 }
 
 // TODO: alternative method: plot all the data and only change minX and maxX
+// TODO: use theme.colorscheme
