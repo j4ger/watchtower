@@ -1,7 +1,7 @@
-import 'package:bluetooth_low_energy/bluetooth_low_energy.dart';
 import 'package:flutter/material.dart';
 import 'package:watchtower/bluetooth_page.dart';
 import 'package:watchtower/signal_page.dart';
+import 'package:get/get.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,20 +13,18 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-        title: 'Watchtower',
-        themeMode: ThemeMode.system,
-        home: const BluetoothPage(),
-        routes: {
-          'signal': (context) {
-            // TODO: probably shouldn't use modal route
-            final route = ModalRoute.of(context);
-            final eventArgs = route!.settings.arguments as DiscoveredEventArgs;
-            return SignalPage(
-              eventArgs: eventArgs,
-            );
-          }
-        });
+    return GetMaterialApp(
+      title: 'Watchtower',
+      themeMode: ThemeMode.system,
+      initialRoute: '/bluetooth',
+      getPages: [
+        GetPage(name: "/bluetooth", page: () => BluetoothPage()),
+        GetPage(
+            name: "/signal",
+            page: () => SignalPage(),
+            transition: Transition.cupertino)
+      ],
+    );
   }
 }
 

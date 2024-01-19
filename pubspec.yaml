@@ -43,6 +43,7 @@ dependencies:
   fl_chart: ^0.66.0
   scidart: ^0.0.2-dev.12
   iirjdart: ^0.1.0
+  get: ^4.6.6
 
 dev_dependencies:
   flutter_test:
