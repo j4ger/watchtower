@@ -43,10 +43,13 @@ class QRSDetector {
 
     // TODO: remove peaks that are too close
 
-    double avgHeartRate =
-        (peaks.length - 1) / (peaks.last - peaks.first) * sampleRate * 60;
+    double? avgHeartRate = peaks.length > 1
+        ? (peaks.length - 1) / (peaks.last - peaks.first) * sampleRate * 60
+        : null;
     if (heartRate != null) {
-      heartRate = heartRate! * (1 - updateRatio) + avgHeartRate * updateRatio;
+      if (avgHeartRate != null) {
+        heartRate = heartRate! * (1 - updateRatio) + avgHeartRate * updateRatio;
+      }
     } else {
       heartRate = avgHeartRate;
     }

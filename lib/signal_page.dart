@@ -4,6 +4,7 @@ import 'package:bluetooth_low_energy/bluetooth_low_energy.dart';
 import 'package:circular_buffer/circular_buffer.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:watchtower/bluetooth_device.dart';
 import 'package:watchtower/detector.dart';
 import 'package:watchtower/ecg_data.dart';
@@ -264,49 +265,66 @@ class _SignalPageState extends State<SignalPage> {
                         margin: const EdgeInsets.all(8.0),
                         width: 400,
                         height: 200,
-                        child: LineChart(
-                          duration: Duration.zero,
-                          LineChartData(
-                            minY: -1,
-                            maxY: 2,
-                            minX: plotStart,
-                            maxX: plotStart + plotLength,
-                            lineTouchData: const LineTouchData(enabled: false),
-                            lineBarsData: [
-                              LineChartBarData(
-                                  spots: dataBuffer,
-                                  dotData: const FlDotData(show: false),
-                                  barWidth: 3,
-                                  isStrokeCapRound: true,
-                                  // gradient: LinearGradient(colors: [
-                                  //   Colors.white.withOpacity(0),
-                                  //   Colors.white
-                                  // ], stops: const [
-                                  //   0.05,
-                                  //   0.25
-                                  // ]),
-                                  color: Colors.white,
-                                  isCurved: false)
-                            ],
-                            extraLinesData:
-                                ExtraLinesData(verticalLines: annotations),
-                            borderData: FlBorderData(
-                              show: false,
-                            ),
-                            gridData: const FlGridData(show: false),
-                            titlesData: const FlTitlesData(show: false),
-                            clipData: const FlClipData.all(),
+                        child: Stack(children: [
+                          ValueListenableBuilder(
+                            valueListenable: heartRate,
+                            builder: (context, heartRate, child) => Padding(
+                                padding: const EdgeInsets.fromLTRB(0, 4, 6, 0),
+                                child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      const SpinKitPumpingHeart(
+                                          size: 20.0, color: Colors.redAccent),
+                                      const SizedBox(
+                                        width: 2,
+                                      ),
+                                      Text(
+                                        heartRate.toString(),
+                                        style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color:
+                                                Colors.white.withOpacity(0.9)),
+                                      )
+                                    ])),
                           ),
-                        ));
+                          LineChart(
+                            duration: Duration.zero,
+                            LineChartData(
+                              minY: -1,
+                              maxY: 2,
+                              minX: plotStart,
+                              maxX: plotStart + plotLength,
+                              lineTouchData:
+                                  const LineTouchData(enabled: false),
+                              lineBarsData: [
+                                LineChartBarData(
+                                    spots: dataBuffer,
+                                    dotData: const FlDotData(show: false),
+                                    barWidth: 3,
+                                    isStrokeCapRound: true,
+                                    // gradient: LinearGradient(colors: [
+                                    //   Colors.white.withOpacity(0),
+                                    //   Colors.white
+                                    // ], stops: const [
+                                    //   0.05,
+                                    //   0.25
+                                    // ]),
+                                    color: Colors.white,
+                                    isCurved: false)
+                              ],
+                              extraLinesData:
+                                  ExtraLinesData(verticalLines: annotations),
+                              borderData: FlBorderData(
+                                show: false,
+                              ),
+                              gridData: const FlGridData(show: false),
+                              titlesData: const FlTitlesData(show: false),
+                              clipData: const FlClipData.all(),
+                            ),
+                          )
+                        ]));
               }),
-          ValueListenableBuilder(
-            valueListenable: heartRate,
-            builder: (context, heartRate, child) => heartRate == null
-                ? Container()
-                : Center(
-                    child: Text(heartRate.toString()),
-                  ),
-          )
         ],
       ),
     );
