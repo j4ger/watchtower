@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:circular_buffer/circular_buffer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -8,14 +10,51 @@ import 'ecg_data.dart';
 import "detector.dart";
 
 const bufferLength = 600;
+const baseOffset = 150;
 const plotLength = 300;
-const delayMs = 200;
+const delayMs = 300;
 const packLength = 50;
-const moveForwardInterval = 13;
-const minDataCount = bufferLength;
 
 class BufferController extends GetxController {
   final CircularBuffer<ECGData> buffer = CircularBuffer(bufferLength);
+
+  int dataAvailable = 0;
+  int timeUntilNextPack = delayMs;
+  int updateInterval = (delayMs / packLength).floor();
+  int updateCounter = 0;
+  int offset = 0;
+  int? lastTimestamp;
+
+  late final Timer tickTimer;
+
+  void calcInterval() {
+    if (dataAvailable > 0) {
+      updateInterval = (timeUntilNextPack / dataAvailable).floor();
+    } else {
+      // wait
+      updateInterval = 0;
+    }
+  }
+
+  void tick(Timer timer) {
+    timeUntilNextPack -= 1;
+    if (updateInterval == 0) {
+      calcInterval();
+      if (updateInterval == 0) {
+        return;
+      }
+    }
+
+    if (updateCounter < updateInterval) {
+      updateCounter += 1;
+    } else {
+      offset += 1;
+      update();
+      dataAvailable -= 1;
+      updateCounter = 0;
+      calcInterval();
+    }
+  }
 
   void add(ECGData item) {
     buffer.add(item);
@@ -26,6 +65,15 @@ class BufferController extends GetxController {
     for (ECGData item in items) {
       add(item);
     }
+    dataAvailable += items.length;
+    offset -= items.length;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (lastTimestamp != null) {
+      timeUntilNextPack = now - lastTimestamp!;
+    } else {
+      timeUntilNextPack = delayMs;
+    }
+    lastTimestamp = now;
   }
 
   double get start => buffer.firstOrNull?.x ?? 0;
@@ -44,9 +92,20 @@ class BufferController extends GetxController {
   }
 
   final percentage = 0.0.obs;
-
   void updatePercentage() {
     percentage.value = buffer.length / buffer.capacity;
+  }
+
+  @override
+  void onInit() {
+    super.onInit();
+    tickTimer = Timer.periodic(const Duration(milliseconds: 1), tick);
+  }
+
+  @override
+  void dispose() {
+    tickTimer.cancel();
+    super.dispose();
   }
 }
 
@@ -102,8 +161,11 @@ class ECGGraph extends StatelessWidget {
               LineChartData(
                 minY: -1,
                 maxY: 2,
-                minX: controller.start,
-                maxX: controller.end,
+                minX: controller.start + controller.offset + baseOffset,
+                maxX: controller.start +
+                    controller.offset +
+                    baseOffset +
+                    plotLength,
                 lineTouchData: const LineTouchData(enabled: false),
                 lineBarsData: [
                   LineChartBarData(
