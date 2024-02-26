@@ -143,7 +143,11 @@ class ECGGraph extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(0, 4, 6, 0),
               child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                const SpinKitPumpingHeart(size: 20.0, color: Colors.redAccent),
+                SpinKitPumpingHeart(
+                    size: 20.0,
+                    color: controller.percentage.value == 1.0
+                        ? Colors.redAccent
+                        : Colors.grey),
                 const SizedBox(
                   width: 2,
                 ),
