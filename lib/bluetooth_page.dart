@@ -4,6 +4,7 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter/material.dart';
 import 'package:bluetooth_low_energy/bluetooth_low_energy.dart';
 import 'package:get/get.dart';
+import 'package:watchtower/target_page.dart';
 
 import 'rssi_widget.dart';
 
@@ -93,12 +94,9 @@ class BluetoothPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: const Text("Select device"),
-        ),
-        body: SafeArea(
-            child: Column(
+        body: Column(
           children: [
+            const SizedBox(height: 10),
             Row(children: [
               const SizedBox(
                 width: 10,
@@ -137,7 +135,9 @@ class BluetoothPage extends StatelessWidget {
                           await controller.stopDiscovery();
                         }
                         Get.toNamed("/signal",
-                            arguments: controller.discoveredEventArgs[i]);
+                            arguments: Target(TargetType.ble,
+                                device: controller
+                                    .discoveredEventArgs[i].peripheral));
                       },
                       title: Text(name ?? 'N/A'),
                       subtitle: Text(
@@ -166,7 +166,7 @@ class BluetoothPage extends StatelessWidget {
               },
             )
           ],
-        )),
+        ),
         floatingActionButton: Obx(() => FloatingActionButton(
               onPressed: controller.state() == BluetoothLowEnergyState.poweredOn
                   ? () async {

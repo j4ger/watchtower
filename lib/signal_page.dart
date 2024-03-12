@@ -5,25 +5,28 @@ import 'package:flutter/material.dart';
 import 'package:watchtower/bluetooth_device.dart';
 import 'package:watchtower/ecg_data.dart';
 import 'package:get/get.dart';
+import 'package:watchtower/mock_device.dart';
+import 'package:watchtower/target_page.dart';
 
 import 'ecg_graph.dart';
 
 class SignalController extends GetxController {
   final connectionState = false.obs;
-  DiscoveredEventArgs eventArgs = Get.arguments;
-  late final StreamSubscription connectionStateChangedSubscription;
-  late final StreamSubscription characteristicNotifiedSubscription;
+  final Peripheral device;
+  final BufferController bufferController;
 
-  final BufferController bufferController = Get.find();
+  SignalController(this.device, this.bufferController);
+
+  late StreamSubscription connectionStateChangedSubscription;
+  late StreamSubscription characteristicNotifiedSubscription;
 
   @override
   void onInit() {
     super.onInit();
 
-    connectionStateChangedSubscription =
-        CentralManager.instance.connectionStateChanged.listen(
+    CentralManager.instance.connectionStateChanged.listen(
       (eventArgs) {
-        if (eventArgs.peripheral != this.eventArgs.peripheral) {
+        if (eventArgs.peripheral != device) {
           return;
         }
         final connectionState = eventArgs.connectionState;
@@ -58,13 +61,12 @@ class SignalController extends GetxController {
   void connect() async {
     // TODO: full screen cover while connecting
 
-    await CentralManager.instance.connect(eventArgs.peripheral).onError(
+    await CentralManager.instance.connect(device).onError(
       (error, stackTrace) {
         Get.snackbar("Error", "Failed to connect to device: $error");
       },
     );
-    final services =
-        await CentralManager.instance.discoverGATT(eventArgs.peripheral);
+    final services = await CentralManager.instance.discoverGATT(device);
     // TODO: better error management
     GattCharacteristic? target;
     outer:
@@ -91,7 +93,7 @@ class SignalController extends GetxController {
   }
 
   void disconnect() async {
-    await CentralManager.instance.disconnect(eventArgs.peripheral).onError(
+    await CentralManager.instance.disconnect(device).onError(
       (error, stackTrace) {
         Get.snackbar("Error", "Failed to connect to device: $error");
       },
@@ -100,38 +102,51 @@ class SignalController extends GetxController {
 }
 
 class SignalPage extends StatelessWidget {
-  SignalPage({super.key});
+  final Target target = Get.arguments;
+
+  SignalPage({super.key}) {
+    if (target.isMock) {
+      mockController = Get.put(MockController(target.path!, bufferController));
+    } else {
+      signalController =
+          Get.put(SignalController(target.device!, bufferController));
+    }
+  }
+
   final bufferController = Get.put(BufferController());
-  final controller = Get.put(SignalController());
+  late final SignalController? signalController;
+  late final MockController? mockController;
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
       onPopInvoked: (didPop) async {
-        if (controller.connectionState.value) {
-          final peripheral = controller.eventArgs.peripheral;
-          await CentralManager.instance.disconnect(peripheral);
+        if (!target.isMock) {
+          if (signalController!.connectionState.value) {
+            await CentralManager.instance.disconnect(signalController!.device);
+          }
         }
       },
       child: Scaffold(
         appBar: AppBar(title: const Text("View Signal"), actions: [
-          Obx(() => controller.connectionState.value
-              ? IconButton(
-                  icon: const Icon(Icons.bluetooth_connected),
-                  iconSize: 24,
-                  color: Colors.greenAccent,
-                  onPressed: () {
-                    controller.disconnect();
-                  },
-                )
-              : IconButton(
-                  icon: const Icon(Icons.refresh),
-                  iconSize: 24,
-                  color: Colors.yellowAccent,
-                  onPressed: () {
-                    controller.connect();
-                  },
-                ))
+          if (!target.isMock)
+            Obx(() => signalController!.connectionState.value
+                ? IconButton(
+                    icon: const Icon(Icons.bluetooth_connected),
+                    iconSize: 24,
+                    color: Colors.greenAccent,
+                    onPressed: () {
+                      signalController!.disconnect();
+                    },
+                  )
+                : IconButton(
+                    icon: const Icon(Icons.refresh),
+                    iconSize: 24,
+                    color: Colors.yellowAccent,
+                    onPressed: () {
+                      signalController!.connect();
+                    },
+                  ))
         ]),
         body: SafeArea(
           child: Column(

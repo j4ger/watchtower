@@ -56,14 +56,14 @@ class BufferController extends GetxController {
     }
   }
 
-  void add(ECGData item) {
+  void _add(ECGData item) {
     buffer.add(item);
     updatePercentage();
   }
 
   void extend(List<ECGData> items) {
     for (ECGData item in items) {
-      add(item);
+      _add(item);
     }
     dataAvailable += items.length;
     offset -= items.length;
@@ -74,6 +74,10 @@ class BufferController extends GetxController {
       timeUntilNextPack = delayMs;
     }
     lastTimestamp = now;
+  }
+
+  void add(ECGData item) {
+    extend([item]);
   }
 
   double get start => buffer.firstOrNull?.x ?? 0;

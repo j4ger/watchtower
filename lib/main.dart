@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:watchtower/bluetooth_page.dart';
 import 'package:watchtower/signal_page.dart';
 import 'package:get/get.dart';
+import 'package:watchtower/target_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,9 +16,9 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'Watchtower',
       themeMode: ThemeMode.system,
-      initialRoute: '/bluetooth',
+      initialRoute: '/target',
       getPages: [
-        GetPage(name: "/bluetooth", page: () => BluetoothPage()),
+        GetPage(name: "/target", page: () => const TargetPage()),
         GetPage(
             name: "/signal",
             page: () => SignalPage(),
