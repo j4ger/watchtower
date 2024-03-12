@@ -6,7 +6,7 @@ import 'package:get/get.dart';
 import 'package:watchtower/ecg_data.dart';
 import 'package:watchtower/ecg_graph.dart';
 
-const timerInterval = Duration(milliseconds: 4);
+const timerInterval = Duration(milliseconds: 200);
 
 class MockController extends GetxController {
   final String path;
@@ -29,14 +29,16 @@ class MockController extends GetxController {
 
     timer = Timer.periodic(timerInterval, (timer) {
       final currentIndex = (index % data.length).toInt();
-      bufferController.add(ECGData(index, data[currentIndex]));
-      print("add: $currentIndex, len: ${data.length}");
-      if (currentIndex == data.length - 1) {
-        bufferController.doDetection();
-        print("do det");
+      List<ECGData> newData = [];
+      int i = 0;
+      while (i < packLength) {
+        newData.add(ECGData(index + i, data[currentIndex + i]));
+        i++;
       }
+      bufferController.extend(newData);
+      bufferController.doDetection();
 
-      index++;
+      index += packLength;
     });
   }
 
