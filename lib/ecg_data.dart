@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'package:fl_chart/fl_chart.dart';
 
 class ECGData extends FlSpot {
+// TODO: avoid multiple type casting
+
   ECGData(int timestamp, double value) : super(timestamp.toDouble(), value);
 
   static List<ECGData> fromPacket(Uint8List data) {

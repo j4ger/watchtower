@@ -51,6 +51,7 @@ class PipelineGraph extends StatelessWidget {
                       lineTouchData: const LineTouchData(enabled: false),
                       lineBarsData: [
                         LineChartBarData(
+                            show: controller.buffer.isNotEmpty,
                             spots: item,
                             dotData: const FlDotData(show: false),
                             barWidth: 3,
