@@ -3,26 +3,28 @@ import 'package:scidart/scidart.dart';
 
 const defaultNumTaps = 1;
 
-// TODO: cache filter coefficients generation
+class DigitalFilter {
+  late final Array coefficients;
 
-Array lowpass(int fs, double freq, Array input,
-    {int numtaps = defaultNumTaps, String windowType = "blackman"}) {
-  final nyq = fs / 2;
-  final normalizeFreq = freq / nyq;
+  DigitalFilter.lowpass(int fs, double freq,
+      {int numtaps = defaultNumTaps, String windowType = "blackman"}) {
+    final nyq = fs / 2;
+    final normalizeFreq = freq / nyq;
 
-  final coeffs = firwin(numtaps, Array([normalizeFreq]),
-      window: windowType, pass_zero: 'lowpass');
+    coefficients = firwin(numtaps, Array([normalizeFreq]),
+        window: windowType, pass_zero: 'lowpass');
+  }
 
-  return lfilter(coeffs, Array([1.0]), input);
-}
+  DigitalFilter.highpass(int fs, double freq,
+      {int numtaps = defaultNumTaps, String windowType = "blackman"}) {
+    final nyq = fs / 2;
+    final normalizeFreq = freq / nyq;
 
-Array highpass(int fs, double freq, Array input,
-    {int numtaps = defaultNumTaps, String windowType = "blackman"}) {
-  final nyq = fs / 2;
-  final normalizeFreq = freq / nyq;
+    coefficients = firwin(numtaps, Array([normalizeFreq]),
+        window: windowType, pass_zero: 'highpass');
+  }
 
-  final coeffs = firwin(numtaps, Array([normalizeFreq]),
-      window: windowType, pass_zero: 'highpass');
-
-  return lfilter(coeffs, Array([1.0]), input);
+  Array apply(Array input) {
+    return lfilter(coefficients, Array([1.0]), input);
+  }
 }

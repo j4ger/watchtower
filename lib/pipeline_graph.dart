@@ -1,19 +1,21 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'package:scidart/numdart.dart';
+import 'package:watchtower/algorithm/pipeline.dart';
 
 import 'ecg_graph.dart';
 import 'ecg_data.dart';
 
 class PipelineGraph extends StatelessWidget {
-  final List<List<ECGData>> Function(List<ECGData>) pipeline;
-  const PipelineGraph({super.key, required this.pipeline});
+  final List<Pipeline> pipelines;
+  const PipelineGraph({super.key, required this.pipelines});
 
   @override
   Widget build(BuildContext context) => GetBuilder<BufferController>(
       builder: (controller) => Column(
-          children: pipeline(controller.buffer)
-              .map((item) => Container(
+          children: pipelines
+              .map((pipeline) => Container(
                   decoration: BoxDecoration(
                       boxShadow: const [
                         BoxShadow(
@@ -41,8 +43,8 @@ class PipelineGraph extends StatelessWidget {
                   child: LineChart(
                     duration: Duration.zero,
                     LineChartData(
-                      minY: -1,
-                      maxY: 2,
+                      // minY: -1,
+                      // maxY: 2,
                       minX: controller.start + controller.offset + baseOffset,
                       maxX: controller.start +
                           controller.offset +
@@ -52,7 +54,11 @@ class PipelineGraph extends StatelessWidget {
                       lineBarsData: [
                         LineChartBarData(
                             show: controller.buffer.isNotEmpty,
-                            spots: item,
+                            spots: mapArrayToData(
+                                controller.buffer,
+                                pipeline.apply(Array(controller.buffer
+                                    .map((element) => element.y)
+                                    .toList()))),
                             dotData: const FlDotData(show: false),
                             barWidth: 3,
                             isStrokeCapRound: true,

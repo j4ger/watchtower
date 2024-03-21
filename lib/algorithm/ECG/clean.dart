@@ -3,26 +3,54 @@
 import 'package:scidart/numdart.dart';
 import 'package:scidart/scidart.dart';
 import 'package:watchtower/algorithm/digital_filters.dart';
+import 'package:watchtower/algorithm/pipeline.dart';
 
-Array cleanPT(Array input, int fs) {
-  const numtaps = 9;
-  final lp = lowpass(fs, 15, input, numtaps: numtaps);
-  final hp = highpass(fs, 5, lp, numtaps: numtaps);
-  return hp;
+class CleanPT extends Pipeline {
+  static const numtaps = 9;
+  late final DigitalFilter lowpassFilter, highpassFilter;
+
+  CleanPT(int fs) {
+    lowpassFilter = DigitalFilter.lowpass(fs, 15, numtaps: numtaps);
+    highpassFilter = DigitalFilter.highpass(fs, 5, numtaps: numtaps);
+  }
+
+  @override
+  Array apply(Array input) {
+    final lp = lowpassFilter.apply(input);
+    final hp = highpassFilter.apply(lp);
+    return hp;
+  }
 }
 
-Array cleanPowerline(Array input, int fs) {
-  // filter out 50Hz signal by applying a smoothing window
-  // with the width of a period of 50Hz
-  final width = fs ~/ 50;
-  final window = ones(width);
-  final conv = convolution(input, window, fast: true);
-  return conv;
+class CleanPowerline extends Pipeline {
+  late final Array window;
+
+  CleanPowerline(int fs) {
+    final width = fs ~/ 50;
+    window = ones(width);
+  }
+
+  @override
+  Array apply(Array input) {
+    final conv = convolution(input, window);
+    return conv;
+  }
 }
 
-Array cleanNK(Array input, int fs) {
-  const numtaps = 5;
-  final hp = highpass(fs, 0.5, input, numtaps: numtaps);
-  final pwrLine = cleanPowerline(hp, fs);
-  return pwrLine;
+class CleanNK extends Pipeline {
+  static const numtaps = 5;
+  late final DigitalFilter highpassFilter;
+  late final Pipeline powerlineCleaner;
+
+  CleanNK(int fs) {
+    highpassFilter = DigitalFilter.highpass(fs, 0.5, numtaps: numtaps);
+    powerlineCleaner = CleanPowerline(fs);
+  }
+
+  @override
+  Array apply(Array input) {
+    final hp = highpassFilter.apply(input);
+    final pwrLine = powerlineCleaner.apply(hp);
+    return pwrLine;
+  }
 }

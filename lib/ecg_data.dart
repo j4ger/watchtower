@@ -1,6 +1,8 @@
 import 'dart:typed_data';
 
+import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:scidart/numdart.dart';
 
 class ECGData extends FlSpot {
 // TODO: avoid multiple type casting
@@ -19,5 +21,13 @@ class ECGData extends FlSpot {
     return result;
   }
 }
+
+List<ECGData> mapArrayToData(List<ECGData> originalData, Array processedData) {
+  return originalData
+      .mapIndexed(
+          (index, element) => ECGData(element.x.toInt(), processedData[index]))
+      .toList();
+}
+
 
 // TODO: push directly into buffer

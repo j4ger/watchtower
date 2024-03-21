@@ -1,10 +1,8 @@
 import 'package:bluetooth_low_energy/bluetooth_low_energy.dart';
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:scidart/numdart.dart';
 import 'package:watchtower/algorithm/ECG/clean.dart';
-import 'package:watchtower/ecg_data.dart';
+import 'package:watchtower/algorithm/pipeline.dart';
 import 'package:watchtower/mock_device.dart';
 import 'package:watchtower/pipeline_graph.dart';
 import 'package:watchtower/signal_controller.dart';
@@ -73,7 +71,7 @@ class SignalPage extends StatelessWidget {
                           LinearProgressIndicator(value: value))
                   : Container()),
               const ECGGraph(),
-              const PipelineGraph(pipeline: pipeline)
+              PipelineGraph(pipelines: pipelines)
             ],
           ),
         ),
@@ -82,23 +80,10 @@ class SignalPage extends StatelessWidget {
   }
 }
 
-List<ECGData> mapArrayToData(List<ECGData> originalData, Array processedData) {
-  return originalData
-      .mapIndexed(
-          (index, element) => ECGData(element.x.toInt(), processedData[index]))
-      .toList();
-}
-
-List<List<ECGData>> pipeline(List<ECGData> input) {
-  const fs = 250;
-  final source = Array(input.map((e) => e.y).toList());
-
-  final pt = cleanPT(source, fs);
-
-  final nk = cleanNK(source, fs);
-
-  return [pt, nk].map((e) => mapArrayToData(input, e)).toList();
-}
+const fs = 250;
+final List<Pipeline> pipelines = [
+  CleanPT(fs),
+];
 
 // TODO: alternative method: plot all the data and only change minX and maxX
 // TODO: use theme.colorscheme
