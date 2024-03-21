@@ -20,9 +20,9 @@ class MyApp extends StatelessWidget {
       getPages: [
         GetPage(name: "/target", page: () => const TargetPage()),
         GetPage(
-            name: "/signal",
-            page: () => SignalPage(),
-            transition: Transition.cupertino)
+          name: "/signal",
+          page: () => SignalPage(),
+        )
       ],
     );
   }

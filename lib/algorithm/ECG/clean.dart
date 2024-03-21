@@ -6,7 +6,7 @@ import 'package:watchtower/algorithm/digital_filters.dart';
 import 'package:watchtower/algorithm/pipeline.dart';
 
 class CleanPT extends Pipeline {
-  static const numtaps = 9;
+  static const numtaps = 11;
   late final DigitalFilter lowpassFilter, highpassFilter;
 
   CleanPT(int fs) {
@@ -38,7 +38,7 @@ class CleanPowerline extends Pipeline {
 }
 
 class CleanNK extends Pipeline {
-  static const numtaps = 5;
+  static const numtaps = 11;
   late final DigitalFilter highpassFilter;
   late final Pipeline powerlineCleaner;
 

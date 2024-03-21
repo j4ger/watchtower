@@ -81,9 +81,7 @@ class SignalPage extends StatelessWidget {
 }
 
 const fs = 250;
-final List<Pipeline> pipelines = [
-  CleanPT(fs),
-];
+final List<Pipeline> pipelines = [CleanPT(fs), CleanNK(fs)];
 
 // TODO: alternative method: plot all the data and only change minX and maxX
 // TODO: use theme.colorscheme

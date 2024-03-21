@@ -1,3 +1,6 @@
+// TODO: alternative scrolling method: render directly from circularBuffer
+// probably need to change the way "timestamp" is assigned
+
 import 'dart:async';
 
 import 'package:circular_buffer/circular_buffer.dart';
