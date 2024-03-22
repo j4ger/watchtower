@@ -3,8 +3,8 @@ import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:scidart/numdart.dart';
 import 'package:watchtower/algorithm/pipeline.dart';
+import 'package:watchtower/buffer_controller.dart';
 
-import 'ecg_graph.dart';
 import 'ecg_data.dart';
 
 class PipelineGraph extends StatelessWidget {
@@ -34,8 +34,8 @@ class PipelineGraph extends StatelessWidget {
                             0.95,
                           ],
                           colors: [
-                            Color.fromRGBO(0x52, 0x57, 0xd5, 0.5),
-                            Color.fromRGBO(0x24, 0x2a, 0xcf, 1),
+                            Color.fromRGBO(0x52, 0x57, 0xd5, 1),
+                            Color.fromRGBO(0x24, 0x2a, 0xcf, 0.5),
                           ])),
                   margin: const EdgeInsets.all(8.0),
                   width: 400,

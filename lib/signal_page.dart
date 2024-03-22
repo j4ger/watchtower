@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:watchtower/algorithm/ECG/clean.dart';
 import 'package:watchtower/algorithm/pipeline.dart';
+import 'package:watchtower/buffer_controller.dart';
 import 'package:watchtower/mock_device.dart';
 import 'package:watchtower/pipeline_graph.dart';
 import 'package:watchtower/signal_controller.dart';

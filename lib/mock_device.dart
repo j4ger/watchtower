@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:csv/csv.dart';
 import 'package:get/get.dart';
+import 'package:watchtower/buffer_controller.dart';
 import 'package:watchtower/ecg_data.dart';
-import 'package:watchtower/ecg_graph.dart';
 
 const timerInterval = Duration(milliseconds: 200);
 
