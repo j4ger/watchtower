@@ -4,38 +4,43 @@ import 'package:get/get.dart';
 import 'package:watchtower/algorithm/ECG/clean.dart';
 import 'package:watchtower/algorithm/pipeline.dart';
 import 'package:watchtower/buffer_controller.dart';
+import 'package:watchtower/graph.dart';
 import 'package:watchtower/mock_device.dart';
-import 'package:watchtower/pipeline_graph.dart';
 import 'package:watchtower/signal_controller.dart';
 import 'package:watchtower/target_page.dart';
-
-import 'ecg_graph.dart';
 
 class SignalPage extends StatelessWidget {
   final Target target = Get.arguments;
 
-  SignalPage({super.key}) {
+  SignalPage({super.key});
+
+  late final SignalController? signalController;
+  late final MockController? mockController;
+
+  @override
+  Widget build(BuildContext context) {
+    final bufferController = Get.put(BufferController());
     if (target.isMock) {
       mockController = Get.put(MockController(target.path!, bufferController));
     } else {
       signalController =
           Get.put(SignalController(target.device!, bufferController));
     }
-  }
 
-  final bufferController = Get.put(BufferController());
-  late final SignalController? signalController;
-  late final MockController? mockController;
-
-  @override
-  Widget build(BuildContext context) {
     return PopScope(
       onPopInvoked: (didPop) async {
         if (!target.isMock) {
           if (signalController!.connectionState.value) {
             await CentralManager.instance.disconnect(signalController!.device);
           }
+          signalController!.dispose();
+          Get.delete<SignalController>();
+        } else {
+          mockController!.dispose();
+          Get.delete<MockController>();
         }
+        bufferController.dispose();
+        Get.delete<BufferController>();
       },
       child: Scaffold(
         appBar: AppBar(title: const Text("View Signal"), actions: [
@@ -71,8 +76,11 @@ class SignalPage extends StatelessWidget {
                       builder: (context, value, child) =>
                           LinearProgressIndicator(value: value))
                   : Container()),
-              const ECGGraph(),
-              PipelineGraph(pipelines: pipelines)
+              // const ECGGraph(),
+              Obx(() => bufferController.percentage.value == 1.0
+                  ? const Graph()
+                  : Container()),
+              // PipelineGraph(pipelines: pipelines)
             ],
           ),
         ),

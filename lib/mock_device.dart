@@ -6,7 +6,7 @@ import 'package:get/get.dart';
 import 'package:watchtower/buffer_controller.dart';
 import 'package:watchtower/ecg_data.dart';
 
-const timerInterval = Duration(milliseconds: 200);
+const timerInterval = Duration(milliseconds: delayMs);
 
 class MockController extends GetxController {
   final String path;

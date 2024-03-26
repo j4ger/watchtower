@@ -1,13 +1,17 @@
 import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:scidart/numdart.dart';
+import 'package:watchtower/buffer_controller.dart';
 
-class ECGData extends FlSpot {
-// TODO: avoid multiple type casting
+class ECGData {
+  int timestamp;
+  double value;
+  late int index;
 
-  ECGData(int timestamp, double value) : super(timestamp.toDouble(), value);
+  ECGData(this.timestamp, this.value) {
+    index = timestamp % bufferLength;
+  }
 
   static List<ECGData> fromPacket(Uint8List data) {
     final bytes = ByteData.sublistView(data);
@@ -25,7 +29,7 @@ class ECGData extends FlSpot {
 List<ECGData> mapArrayToData(List<ECGData> originalData, Array processedData) {
   return originalData
       .mapIndexed(
-          (index, element) => ECGData(element.x.toInt(), processedData[index]))
+          (index, element) => ECGData(element.timestamp, processedData[index]))
       .toList();
 }
 

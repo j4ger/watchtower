@@ -24,12 +24,12 @@ class QRSDetector {
           ..highPass(1, 2, filterHighCut * 2 / sampleRate);
 
   List<VerticalLine> detect(List<ECGData> data) {
-    final baseIndex = data.first.x;
+    final baseIndex = data.first.timestamp;
     filterLow.reset();
     filterHigh.reset();
     // TODO: potential performance optimization
-    final filteredData = Array(List.generate(
-        data.length, (i) => filterHigh.filter(filterLow.filter(data[i].y))));
+    final filteredData = Array(List.generate(data.length,
+        (i) => filterHigh.filter(filterLow.filter(data[i].value))));
     // final differentiatedData = List.generate(
     //     filteredData.length - 1, (i) => filteredData[i + 1] - filteredData[i]);
     // final squaredData = differentiatedData.map((item) => item * item).toList();

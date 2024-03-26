@@ -1,91 +1,62 @@
-import 'dart:async';
-
-import 'package:circular_buffer/circular_buffer.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/animation.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:watchtower/detector.dart';
 import 'package:watchtower/ecg_data.dart';
 
 const bufferLength = 600;
-const baseOffset = 150;
-const plotLength = 300;
 const delayMs = 300;
 const packLength = 50;
 
-class BufferController extends GetxController {
-  final CircularBuffer<ECGData> buffer = CircularBuffer(bufferLength);
+const intervalCorrectionRatio = 0.5;
 
-  int dataAvailable = 0;
-  int timeUntilNextPack = delayMs;
-  int updateInterval = (delayMs / packLength).floor();
-  int updateCounter = 0;
-  int offset = 0;
-  int? lastTimestamp;
+const defaultInterval = Duration(milliseconds: delayMs);
 
-  late final Timer tickTimer;
+class BufferController extends GetxController
+    with GetSingleTickerProviderStateMixin {
+  final List<ECGData> buffer = [];
 
-  void calcInterval() {
-    if (dataAvailable > 0) {
-      updateInterval = (timeUntilNextPack / dataAvailable).floor();
-    } else {
-      // wait
-      updateInterval = 0;
-    }
-  }
+  DateTime? lastTimestamp;
+  Duration interval = defaultInterval;
 
-  void tick(Timer timer) {
-    timeUntilNextPack -= 1;
-    if (updateInterval == 0) {
-      calcInterval();
-      if (updateInterval == 0) {
-        return;
-      }
-    }
+  int get cursorIndex => lastPackStart + tween.value;
+  int lastIndex = 0;
 
-    if (updateCounter < updateInterval) {
-      updateCounter += 1;
-    } else {
-      if (buffer.isFilled) {
-        offset += 1;
-      }
-      update();
-      dataAvailable -= 1;
-      updateCounter = 0;
-      calcInterval();
-    }
-  }
+  int lastFreshIndex = 0;
+  int lastPackStart = 0;
+
+  late AnimationController animationController;
+  late Animation<int> tween;
+
+  bool get isFilled => buffer.length >= bufferLength;
 
   void _add(ECGData item) {
-    buffer.add(item);
-    updatePercentage();
+    if (isFilled) {
+      buffer[item.index] = (item);
+    } else {
+      buffer.add(item);
+      updatePercentage();
+    }
   }
 
   void extend(List<ECGData> items) {
     for (ECGData item in items) {
       _add(item);
     }
-    dataAvailable += items.length;
-    if (buffer.isFilled) {
-      offset -= items.length;
-    }
-    final now = DateTime.now().millisecondsSinceEpoch;
+    final now = DateTime.now();
     if (lastTimestamp != null) {
-      timeUntilNextPack = now - lastTimestamp!;
-    } else {
-      timeUntilNextPack = delayMs;
+      final delta = now.difference(lastTimestamp!);
+      interval = interval * (1 - intervalCorrectionRatio) +
+          delta * intervalCorrectionRatio;
+      animationController.duration = interval;
+      animationController.reset();
+      animationController.forward();
     }
     lastTimestamp = now;
+    lastFreshIndex = items.last.index;
+    lastPackStart = items.first.index;
   }
-
-  void add(ECGData item) {
-    extend([item]);
-  }
-
-  double get start => buffer.firstOrNull?.x ?? 0;
-  double get end => buffer.lastOrNull?.x ?? 0;
-
-  double get minX => start + offset + baseOffset;
-  double get minY => start + offset + baseOffset + plotLength;
 
   int? heartRate;
   List<VerticalLine> annotations = [];
@@ -93,7 +64,7 @@ class BufferController extends GetxController {
   final detector = QRSDetector(250, 0.9);
 
   void doDetection() {
-    if (buffer.isFilled) {
+    if (isFilled) {
       annotations = detector.detect(buffer);
       heartRate = detector.heartRate?.floor();
     }
@@ -101,18 +72,27 @@ class BufferController extends GetxController {
 
   final percentage = 0.0.obs;
   void updatePercentage() {
-    percentage.value = buffer.length / buffer.capacity;
+    percentage.value = buffer.length / bufferLength;
   }
 
   @override
   void onInit() {
     super.onInit();
-    tickTimer = Timer.periodic(const Duration(milliseconds: 1), tick);
+    animationController = AnimationController(vsync: this, duration: interval);
+    tween = IntTween(begin: 0, end: packLength - 1).animate(animationController)
+      ..addListener(() {
+        final current = cursorIndex;
+        if (lastIndex != current) {
+          update();
+          lastIndex = current;
+        }
+      });
+    animationController.forward();
   }
 
   @override
   void dispose() {
-    tickTimer.cancel();
+    animationController.dispose();
     super.dispose();
   }
 }

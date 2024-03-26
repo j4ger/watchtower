@@ -37,7 +37,6 @@ dependencies:
   bluetooth_low_energy: ^5.0.0
   flutter_spinkit: ^5.2.0
   convert: ^3.1.1
-  intl: ^0.19.0
   circular_buffer: ^0.11.0
   fl_chart: ^0.66.0
   scidart:
@@ -48,6 +47,7 @@ dependencies:
   file_picker: ^6.2.0
   csv: ^6.0.0
   shared_preferences: ^2.2.2
+  community_charts_flutter: ^1.0.2
 
 dev_dependencies:
   flutter_test:
