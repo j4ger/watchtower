@@ -29,19 +29,24 @@ class TargetPage extends StatelessWidget {
         initialIndex: 0,
         length: 2,
         child: Scaffold(
-            appBar: AppBar(
-                title: const Text("Select device"),
-                bottom: const TabBar(
-                  tabs: [
-                    Tab(icon: Icon(Icons.description), text: "Mock"),
-                    Tab(icon: Icon(Icons.bluetooth), text: "Bluetooth")
-                  ],
-                )),
-            body: SafeArea(
-                child: TabBarView(children: [
-              MockPage(),
-              BluetoothPage(),
-            ]))));
+          appBar: AppBar(
+              title: const Text("Select device"),
+              bottom: const TabBar(
+                tabs: [
+                  Tab(icon: Icon(Icons.description), text: "Mock"),
+                  Tab(icon: Icon(Icons.bluetooth), text: "Bluetooth")
+                ],
+              )),
+          body: SafeArea(
+              child: TabBarView(children: [
+            MockPage(),
+            BluetoothPage(),
+          ])),
+          bottomNavigationBar: BottomAppBar(
+              color: Colors.white,
+              elevation: 0,
+              child: Center(child: Image.asset("assets/logo.png"))),
+        ));
   }
 }
 
