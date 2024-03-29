@@ -1,9 +1,11 @@
-import 'package:fl_chart/fl_chart.dart';
+import 'package:circular_buffer/circular_buffer.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/animation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:watchtower/detector.dart';
 import 'package:watchtower/ecg_data.dart';
+
+const largeBufferLength = 2500; // 2500 / 250 s^-1 = 10s
 
 const bufferLength = 600;
 const delayMs = 300;
@@ -16,6 +18,13 @@ const defaultInterval = Duration(milliseconds: delayMs);
 class BufferController extends GetxController
     with GetSingleTickerProviderStateMixin {
   final List<ECGData> buffer = [];
+
+  // TODO: largeBuffer is not actually large
+  // final CircularBuffer<ECGData> largeBuffer = CircularBuffer(largeBufferLength);
+  List<ECGData> get largeBuffer => isFilled
+      ? ListSlice(buffer, lastFreshIndex + 1, bufferLength) +
+          ListSlice(buffer, 0, lastFreshIndex)
+      : [];
 
   DateTime? lastTimestamp;
   Duration interval = defaultInterval;
@@ -44,6 +53,7 @@ class BufferController extends GetxController
     for (ECGData item in items) {
       _add(item);
     }
+    // largeBuffer.addAll(items);
     final now = DateTime.now();
     if (lastTimestamp != null) {
       final delta = now.difference(lastTimestamp!);
@@ -59,15 +69,11 @@ class BufferController extends GetxController
   }
 
   int? heartRate;
-  List<VerticalLine> annotations = [];
 
-  final detector = QRSDetector(250, 0.9);
+  // final detector = QRSDetector(250, 0.9);
 
   void doDetection() {
-    if (isFilled) {
-      annotations = detector.detect(buffer);
-      heartRate = detector.heartRate?.floor();
-    }
+    // TODO:
   }
 
   final percentage = 0.0.obs;
@@ -77,6 +83,7 @@ class BufferController extends GetxController
 
   @override
   void onInit() {
+    // TODO: preload mock data
     super.onInit();
     animationController = AnimationController(vsync: this, duration: interval);
     tween = IntTween(begin: 0, end: packLength - 1).animate(animationController)

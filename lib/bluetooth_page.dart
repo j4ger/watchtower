@@ -27,6 +27,7 @@ class BluetoothController extends GetxController
     spinnerController.stop();
     await CentralManager.instance.setUp();
     state.value = await CentralManager.instance.getState();
+    await startDiscovery();
   }
 
   void onCrashed(Object error, StackTrace stackTrace) {

@@ -6,6 +6,7 @@ import 'package:watchtower/algorithm/pipeline.dart';
 import 'package:watchtower/buffer_controller.dart';
 import 'package:watchtower/graph.dart';
 import 'package:watchtower/mock_device.dart';
+import 'package:watchtower/pipeline_graph.dart';
 import 'package:watchtower/signal_controller.dart';
 import 'package:watchtower/target_page.dart';
 
@@ -80,7 +81,7 @@ class SignalPage extends StatelessWidget {
               Obx(() => bufferController.percentage.value == 1.0
                   ? const Graph()
                   : Container()),
-              // PipelineGraph(pipelines: pipelines)
+              // PipelineGraph(pipelines, detectors)
             ],
           ),
         ),
@@ -91,6 +92,7 @@ class SignalPage extends StatelessWidget {
 
 const fs = 250;
 final List<Pipeline> pipelines = [CleanPT(fs), CleanNK(fs)];
+final List<Detector> detectors = [];
 
 // TODO: alternative method: plot all the data and only change minX and maxX
 // TODO: use theme.colorscheme

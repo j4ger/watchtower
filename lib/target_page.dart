@@ -102,6 +102,7 @@ class MockPage extends StatelessWidget {
                 try {
                   final String? path = (await FilePicker.platform.pickFiles(
                           allowMultiple: false,
+                          type: FileType.custom,
                           allowedExtensions: ["csv"],
                           dialogTitle: "Select mock file"))
                       ?.files[0]
@@ -110,6 +111,8 @@ class MockPage extends StatelessWidget {
                     controller.save(path);
                     Get.toNamed("/signal",
                         arguments: Target(TargetType.mock, path: path));
+                  } else {
+                    Get.snackbar("Cancelled", "No file was selected.");
                   }
                 } on PlatformException catch (e) {
                   Get.snackbar("Error", "Failed to open file dialog: $e");

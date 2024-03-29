@@ -26,10 +26,11 @@ class ECGData {
   }
 }
 
-List<ECGData> mapArrayToData(List<ECGData> originalData, Array processedData) {
-  return originalData
+List<ECGData> mapArrayToData(
+    List<ECGData> originalData, List<double> processedData) {
+  return processedData
       .mapIndexed(
-          (index, element) => ECGData(element.timestamp, processedData[index]))
+          (index, element) => ECGData(originalData[index].timestamp, element))
       .toList();
 }
 

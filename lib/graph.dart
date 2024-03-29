@@ -9,15 +9,17 @@ import 'package:watchtower/ecg_data.dart';
 const displayStart = 2 * packLength;
 
 class Graph extends StatelessWidget {
-  const Graph({super.key});
+  final List<ECGData>? source;
+  const Graph({this.source, super.key});
 
   @override
   Widget build(BuildContext context) =>
       GetBuilder<BufferController>(builder: (controller) {
+        final buffer = source ?? controller.buffer;
         int freshStart, freshEnd;
         if (controller.cursorIndex > bufferLength) {
           freshStart = controller.cursorIndex - bufferLength;
-          freshEnd = bufferLength - 1;
+          freshEnd = bufferLength;
         } else {
           freshStart = 0;
           freshEnd = controller.cursorIndex;
@@ -28,7 +30,7 @@ class Graph extends StatelessWidget {
               id: "fresh",
               domainFn: (ECGData item, _) => item.index,
               measureFn: (ECGData item, _) => item.value,
-              data: ListSlice(controller.buffer, freshStart, freshEnd),
+              data: ListSlice(buffer, freshStart, freshEnd),
               colorFn: (_, __) => freshColor)
         ];
         final List<charts.RangeAnnotationSegment<int>> rangeAnnotations = [];
@@ -37,7 +39,7 @@ class Graph extends StatelessWidget {
               id: "stale",
               domainFn: (ECGData item, _) => item.index,
               measureFn: (ECGData item, _) => item.value,
-              data: ListSlice(controller.buffer, staleStart, bufferLength - 1),
+              data: ListSlice(buffer, staleStart, bufferLength),
               colorFn: (_, __) => staleColor));
           rangeAnnotations.add(charts.RangeAnnotationSegment(
               freshEnd, staleStart, charts.RangeAnnotationAxisType.domain,
