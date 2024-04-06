@@ -44,3 +44,15 @@ app.*.map.json
 
 # Android key settings
 /android/key.properties
+
+# nix
+.direnv/
+# Devenv
+.devenv*
+devenv.local.nix
+
+# direnv
+.direnv
+
+# pre-commit
+.pre-commit-config.yaml
