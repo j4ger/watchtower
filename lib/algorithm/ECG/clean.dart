@@ -6,6 +6,9 @@ import 'package:watchtower/algorithm/digital_filters.dart';
 import 'package:watchtower/algorithm/pipeline.dart';
 
 class CleanPT extends Pipeline {
+  @override
+  final name = "Pan-Tompkins.clean";
+
   static const numtaps = 11;
   late final DigitalFilter lowpassFilter, highpassFilter;
 
@@ -23,6 +26,9 @@ class CleanPT extends Pipeline {
 }
 
 class CleanPowerline extends Pipeline {
+  @override
+  final name = "Clean powerline interference";
+
   late final Array window;
 
   CleanPowerline(int fs) {
@@ -38,6 +44,9 @@ class CleanPowerline extends Pipeline {
 }
 
 class CleanNK extends Pipeline {
+  @override
+  final name = "NeuroKit.clean";
+
   static const numtaps = 11;
   late final DigitalFilter highpassFilter;
   late final Pipeline powerlineCleaner;

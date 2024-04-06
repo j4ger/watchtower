@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:watchtower/bluetooth_page.dart';
+
+import 'bluetooth_page.dart';
+import 'buffer_controller.dart';
+import 'mock_device.dart';
 
 const previousFileKey = "PreviousFile";
 
@@ -51,6 +54,8 @@ class TargetPage extends StatelessWidget {
 }
 
 class MockPageController extends GetxController {
+  final BufferController bufferController = Get.find();
+
   var previousFile = "".obs;
 
   @override
@@ -89,9 +94,13 @@ class MockPage extends StatelessWidget {
               : FilledButton(
                   child: const Text("Load Previous"),
                   onPressed: () {
+                    controller.bufferController.reset();
+                    Get.put(MockController(controller.previousFile.value,
+                        controller.bufferController));
                     Get.toNamed("/signal",
                         arguments: Target(TargetType.mock,
-                            path: controller.previousFile.value));
+                            path: controller
+                                .previousFile.value)); // TODO: redesign this
                   },
                 )),
           const SizedBox(
@@ -109,6 +118,8 @@ class MockPage extends StatelessWidget {
                       .path;
                   if (path != null) {
                     controller.save(path);
+                    controller.bufferController.reset();
+                    Get.put(MockController(path, controller.bufferController));
                     Get.toNamed("/signal",
                         arguments: Target(TargetType.mock, path: path));
                   } else {

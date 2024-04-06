@@ -1,6 +1,8 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:scidart/numdart.dart';
+import 'package:watchtower/algorithm/pipeline.dart';
 import 'package:watchtower/buffer_controller.dart';
 import 'package:community_charts_flutter/community_charts_flutter.dart'
     as charts;
@@ -8,9 +10,19 @@ import 'package:watchtower/ecg_data.dart';
 
 const displayStart = 2 * packLength;
 
+const rendererId = "a";
+
 class Graph extends StatelessWidget {
   final List<ECGData>? source;
-  const Graph({this.source, super.key});
+  final List<int>? annotations;
+  final List<Pipeline>? pipelines;
+  final Detector? detector;
+  const Graph(
+      {this.source,
+      this.annotations,
+      this.pipelines,
+      this.detector,
+      super.key});
 
   @override
   Widget build(BuildContext context) =>
@@ -31,7 +43,7 @@ class Graph extends StatelessWidget {
               domainFn: (ECGData item, _) => item.index,
               measureFn: (ECGData item, _) => item.value,
               data: ListSlice(buffer, freshStart, freshEnd),
-              colorFn: (_, __) => freshColor)
+              colorFn: (_, __) => freshColor) as charts.Series<dynamic, int>
         ];
         final List<charts.RangeAnnotationSegment<int>> rangeAnnotations = [];
         if (staleStart < bufferLength) {
@@ -40,7 +52,7 @@ class Graph extends StatelessWidget {
               domainFn: (ECGData item, _) => item.index,
               measureFn: (ECGData item, _) => item.value,
               data: ListSlice(buffer, staleStart, bufferLength),
-              colorFn: (_, __) => staleColor));
+              colorFn: (_, __) => staleColor) as charts.Series<dynamic, int>);
           rangeAnnotations.add(charts.RangeAnnotationSegment(
               freshEnd, staleStart, charts.RangeAnnotationAxisType.domain,
               color: hiddenColor));
@@ -54,6 +66,26 @@ class Graph extends StatelessWidget {
               0, freshStart, charts.RangeAnnotationAxisType.domain,
               color: hiddenColor));
         }
+
+        final List<ECGData> processData = source ?? controller.actualData;
+        Array bufferArray = Array(processData.map((e) => e.value).toList());
+        if (pipelines != null) {
+          for (final step in pipelines!) {
+            bufferArray = step.apply(bufferArray);
+          }
+        }
+        final finalAnnotations =
+            annotations ?? detector?.detect(processData, bufferArray);
+        if (finalAnnotations != null && finalAnnotations.isNotEmpty) {
+          data.add(charts.Series<int, int>(
+              id: "annotations",
+              domainFn: (int index, _) => index % bufferLength,
+              domainLowerBoundFn: (_, __) => null,
+              domainUpperBoundFn: (_, __) => null,
+              measureFn: (_, __) => null,
+              data: finalAnnotations) as charts.Series<dynamic, int>
+            ..setAttribute(charts.rendererIdKey, rendererId));
+        }
         return SizedBox(
             width: 400,
             height: 300,
@@ -66,6 +98,10 @@ class Graph extends StatelessWidget {
               primaryMeasureAxis: const charts.NumericAxisSpec(
                   renderSpec: charts.NoneRenderSpec()),
               behaviors: [charts.RangeAnnotation(rangeAnnotations)],
+              customSeriesRenderers: [
+                charts.SymbolAnnotationRendererConfig(
+                    customRendererId: rendererId)
+              ],
             ));
       });
 }

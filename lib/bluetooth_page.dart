@@ -6,12 +6,16 @@ import 'package:bluetooth_low_energy/bluetooth_low_energy.dart';
 import 'package:get/get.dart';
 import 'package:watchtower/target_page.dart';
 
+import 'buffer_controller.dart';
 import 'rssi_widget.dart';
+import 'signal_controller.dart';
 
 // TODO: timeout and stop
 
 class BluetoothController extends GetxController
     with GetSingleTickerProviderStateMixin {
+  final BufferController bufferController = Get.find();
+
   late AnimationController spinnerController;
 
   var state = BluetoothLowEnergyState.unknown.obs;
@@ -135,10 +139,14 @@ class BluetoothPage extends StatelessWidget {
                         if (discovering) {
                           await controller.stopDiscovery();
                         }
+                        controller.bufferController.reset();
+                        Get.put(SignalController(
+                            controller.discoveredEventArgs[i].peripheral,
+                            controller.bufferController));
                         Get.toNamed("/signal",
                             arguments: Target(TargetType.ble,
-                                device: controller
-                                    .discoveredEventArgs[i].peripheral));
+                                device: controller.discoveredEventArgs[i]
+                                    .peripheral)); // TODO: redesign this
                       },
                       title: Text(name ?? 'N/A'),
                       subtitle: Text(

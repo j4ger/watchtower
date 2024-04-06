@@ -17,6 +17,13 @@ class MockController extends GetxController {
 
   MockController(this.path, this.bufferController);
 
+  ECGData getData() {
+    final currentIndex = (index % data.length).toInt();
+    final result = ECGData(index, data[currentIndex]);
+    index++;
+    return result;
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -27,24 +34,29 @@ class MockController extends GetxController {
 
     data = csv.sublist(2).map((element) => element[1] as double).toList();
 
+    int i = 0;
+    final List<ECGData> initialData = [];
+    while (i < bufferLength) {
+      initialData.add(getData());
+      i++;
+    }
+    bufferController.extend(initialData);
+
     timer = Timer.periodic(timerInterval, (timer) {
-      final currentIndex = (index % data.length).toInt();
-      List<ECGData> newData = [];
+      final List<ECGData> newData = [];
       int i = 0;
       while (i < packLength) {
-        newData.add(ECGData(index + i, data[currentIndex + i]));
+        newData.add(getData());
         i++;
       }
       bufferController.extend(newData);
       bufferController.doDetection();
-
-      index += packLength;
     });
   }
 
   @override
   void dispose() {
-    super.dispose();
     timer.cancel();
+    super.dispose();
   }
 }

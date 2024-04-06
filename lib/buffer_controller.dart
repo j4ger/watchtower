@@ -40,6 +40,14 @@ class BufferController extends GetxController
 
   bool get isFilled => buffer.length >= bufferLength;
 
+  void reset() {
+    lastIndex = 0;
+    lastFreshIndex = 0;
+    lastPackStart = 0;
+    buffer.clear();
+    interval = defaultInterval;
+  }
+
   void _add(ECGData item) {
     if (isFilled) {
       buffer[item.index] = (item);
@@ -81,9 +89,12 @@ class BufferController extends GetxController
     percentage.value = buffer.length / bufferLength;
   }
 
+  List<ECGData> get actualData =>
+      ListSlice(buffer, lastFreshIndex, bufferLength) +
+      ListSlice(buffer, 0, lastFreshIndex);
+
   @override
   void onInit() {
-    // TODO: preload mock data
     super.onInit();
     animationController = AnimationController(vsync: this, duration: interval);
     tween = IntTween(begin: 0, end: packLength - 1).animate(animationController)
@@ -94,7 +105,7 @@ class BufferController extends GetxController
           lastIndex = current;
         }
       });
-    animationController.forward();
+//    animationController.forward();
   }
 
   @override

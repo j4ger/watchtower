@@ -3,7 +3,10 @@ import 'package:watchtower/signal_page.dart';
 import 'package:get/get.dart';
 import 'package:watchtower/target_page.dart';
 
+import 'buffer_controller.dart';
+
 void main() {
+  Get.put(BufferController());
   runApp(const MyApp());
 }
 

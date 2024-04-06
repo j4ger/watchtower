@@ -2,11 +2,11 @@ import 'package:bluetooth_low_energy/bluetooth_low_energy.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:watchtower/algorithm/ECG/clean.dart';
+import 'package:watchtower/algorithm/ECG/find_peaks.dart';
 import 'package:watchtower/algorithm/pipeline.dart';
 import 'package:watchtower/buffer_controller.dart';
 import 'package:watchtower/graph.dart';
 import 'package:watchtower/mock_device.dart';
-import 'package:watchtower/pipeline_graph.dart';
 import 'package:watchtower/signal_controller.dart';
 import 'package:watchtower/target_page.dart';
 
@@ -22,10 +22,9 @@ class SignalPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final bufferController = Get.put(BufferController());
     if (target.isMock) {
-      mockController = Get.put(MockController(target.path!, bufferController));
+      mockController = Get.find<MockController>();
     } else {
-      signalController =
-          Get.put(SignalController(target.device!, bufferController));
+      signalController = Get.find<SignalController>();
     }
 
     return PopScope(
@@ -79,7 +78,10 @@ class SignalPage extends StatelessWidget {
                   : Container()),
               // const ECGGraph(),
               Obx(() => bufferController.percentage.value == 1.0
-                  ? const Graph()
+                  ? Graph(
+                      pipelines: [CleanPT(fs)],
+                      detector: PtPeakDetector(fs),
+                    )
                   : Container()),
               // PipelineGraph(pipelines, detectors)
             ],
@@ -94,5 +96,4 @@ const fs = 250;
 final List<Pipeline> pipelines = [CleanPT(fs), CleanNK(fs)];
 final List<Detector> detectors = [];
 
-// TODO: alternative method: plot all the data and only change minX and maxX
 // TODO: use theme.colorscheme
