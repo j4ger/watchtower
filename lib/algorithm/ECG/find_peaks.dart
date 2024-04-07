@@ -18,14 +18,14 @@ class PtPeakDetector extends Detector {
   }
 
   @override
-  List<int> rawDetect(Array input) {
+  List<int> rawDetect(Array input, int timestampStart) {
     final diffed = arrayDiff(input);
     final squared = Array(diffed.map((element) => element * element).toList());
     final mwa = convolution(squared, window, fast: false);
     final zeroCompensation = (0.2 * fs).toInt();
     mwa.addAll(zeros(zeroCompensation));
 
-    final peaks = _detector.rawDetect(mwa);
+    final peaks = _detector.rawDetect(mwa, timestampStart);
 
     return peaks;
   }
@@ -46,13 +46,16 @@ class EcgPeakDetector extends Detector {
   }
 
   @override
-  List<int> rawDetect(Array input) {
+  List<int> rawDetect(Array input, int timestampStart) {
     final batchPeakStart = signalPeaks.length;
     final peaks = _findPeaks(input);
     peaks.forEachIndexed((index, element) {
-      final (peak, peakValue) = element;
+      final (peakRawIndex, peakValue) = element;
+      final peak = peakRawIndex + timestampStart;
 
       final thresholdI1 = nPKI + 0.25 * (sPKI - nPKI);
+      print(
+          "peak: ${peak}, lastPeak: ${lastPeak}, minPeakDistance: ${minPeakDistance}");
       if (peakValue > thresholdI1 && peak > lastPeak + minPeakDistance) {
         signalPeaks.add(peak);
 

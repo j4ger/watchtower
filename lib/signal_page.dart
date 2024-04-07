@@ -90,7 +90,7 @@ class SignalPage extends StatelessWidget {
   }
 }
 
-const fs = 250;
+const fs = 360;
 final List<Pipeline> pipelines = [CleanPT(fs), CleanNK(fs)];
 final List<Detector> detectors = [];
 
