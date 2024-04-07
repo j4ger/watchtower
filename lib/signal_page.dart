@@ -39,8 +39,6 @@ class SignalPage extends StatelessWidget {
           mockController!.dispose();
           Get.delete<MockController>();
         }
-        bufferController.dispose();
-        Get.delete<BufferController>();
       },
       child: Scaffold(
         appBar: AppBar(title: const Text("View Signal"), actions: [

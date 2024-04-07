@@ -19,13 +19,6 @@ class BufferController extends GetxController
     with GetSingleTickerProviderStateMixin {
   final List<ECGData> buffer = [];
 
-  // TODO: largeBuffer is not actually large
-  // final CircularBuffer<ECGData> largeBuffer = CircularBuffer(largeBufferLength);
-  List<ECGData> get largeBuffer => isFilled
-      ? ListSlice(buffer, lastFreshIndex + 1, bufferLength) +
-          ListSlice(buffer, 0, lastFreshIndex)
-      : [];
-
   DateTime? lastTimestamp;
   Duration interval = defaultInterval;
 
@@ -90,8 +83,8 @@ class BufferController extends GetxController
   }
 
   List<ECGData> get actualData =>
-      ListSlice(buffer, lastFreshIndex, bufferLength) +
-      ListSlice(buffer, 0, lastFreshIndex);
+      ListSlice(buffer, lastFreshIndex + 1, bufferLength) +
+      ListSlice(buffer, 0, lastFreshIndex + 1);
 
   @override
   void onInit() {
