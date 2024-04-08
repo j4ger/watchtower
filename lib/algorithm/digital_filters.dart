@@ -25,6 +25,12 @@ class DigitalFilter {
   }
 
   Array apply(Array input) {
-    return lfilter(coefficients, Array([1.0]), input);
+    final fowardResult = lfilter(coefficients, Array([1.0]), input);
+    final backwardResult = lfilter(
+        coefficients,
+        Array([1.0]),
+        arrayReverse(
+            fowardResult)); // TODO: arrayReverse is unnecessarily expensive
+    return arrayReverse(backwardResult);
   }
 }

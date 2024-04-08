@@ -13,7 +13,7 @@ abstract class Detector {
   List<int> lastResult = [];
 
   /// This should return a List containing the timestamps of peaks
-  List<int> rawDetect(Array input, int timestampStart);
+  List<int> rawDetect(Array input, int timestampStart, Array fullInput);
 
   List<int> detect(List<ECGData> rawInput, Array input) {
     // use caching to avoid recalculation
@@ -28,7 +28,7 @@ abstract class Detector {
     final slice = Array(input
         .getRange(sliceStart, input.length)
         .toList()); // TODO: optimize this
-    final rawResult = rawDetect(slice, sliceStartTimestamp);
+    final rawResult = rawDetect(slice, sliceStartTimestamp, input);
 
     final currentFirstTimestamp = rawInput.first.timestamp;
     final lastResultKeepStart =

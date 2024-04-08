@@ -18,14 +18,14 @@ class PtPeakDetector extends Detector {
   }
 
   @override
-  List<int> rawDetect(Array input, int timestampStart) {
+  List<int> rawDetect(Array input, int timestampStart, Array fullInput) {
     final diffed = arrayDiff(input);
     final squared = Array(diffed.map((element) => element * element).toList());
     final mwa = convolution(squared, window, fast: false);
     final zeroCompensation = (0.2 * fs).toInt();
     mwa.addAll(zeros(zeroCompensation));
 
-    final peaks = _detector.rawDetect(mwa, timestampStart);
+    final peaks = _detector.rawDetect(mwa, timestampStart, fullInput);
 
     return peaks;
   }
@@ -38,7 +38,7 @@ class EcgPeakDetector extends Detector {
   late final int minPeakDistance, minMissedDistance;
   double sPKI = 0.0, nPKI = 0.0;
   final List<int> signalPeaks = [];
-  int lastPeak = 0, lastIndex = -1;
+  int lastPeakTimestamp = 0, lastIndex = -1;
 
   EcgPeakDetector(int fs) {
     minPeakDistance = (0.3 * fs).toInt();
@@ -46,16 +46,17 @@ class EcgPeakDetector extends Detector {
   }
 
   @override
-  List<int> rawDetect(Array input, int timestampStart) {
+  List<int> rawDetect(Array input, int timestampStart, Array fullInput) {
     final batchPeakStart = signalPeaks.length;
     final peaks = _findPeaks(input);
     peaks.forEachIndexed((index, element) {
       final (peakRawIndex, peakValue) = element;
-      final peak = peakRawIndex + timestampStart;
+      final peakTimestamp = peakRawIndex + timestampStart;
 
       final thresholdI1 = nPKI + 0.25 * (sPKI - nPKI);
-      if (peakValue > thresholdI1 && peak > lastPeak + minPeakDistance) {
-        signalPeaks.add(peak);
+      if (peakValue > thresholdI1 &&
+          peakTimestamp > lastPeakTimestamp + minPeakDistance) {
+        signalPeaks.add(peakTimestamp);
 
         if (signalPeaks.length > 9) {
           final rrAve = (signalPeaks[signalPeaks.length - 2] -
@@ -63,32 +64,43 @@ class EcgPeakDetector extends Detector {
               8;
           final rrMissed = (rrAve * 1.66).toInt();
 
-          if (peak - lastPeak > rrMissed) {
+          if (peakTimestamp - lastPeakTimestamp > rrMissed) {
+            // backtrack
             final thresholdI2 = 0.5 * thresholdI1;
-            int? missedPeak;
+            int? missedPeakTimestamp;
             double? missedPeakValue;
-            ListSlice(peaks, lastIndex + 1, index).forEach((element) {
-              if ((element.$1 > lastPeak + minMissedDistance) &&
-                  (element.$1 < peak - minMissedDistance) &&
-                  (element.$2 > thresholdI2)) {
+
+            final fullInputFirstTimestamp =
+                timestampStart + input.length - fullInput.length;
+            final backtrackStart = lastPeakTimestamp - fullInputFirstTimestamp;
+            final backtrackData = fullInput.sublist(
+                backtrackStart, peakTimestamp - fullInputFirstTimestamp);
+            final backtrackPeaks = _findPeaks(Array(backtrackData));
+
+            backtrackPeaks.forEach((element) {
+              final timestamp = element.$1 + backtrackStart;
+              final value = element.$2;
+              if ((timestamp > lastPeakTimestamp + minMissedDistance) &&
+                  (timestamp < peakTimestamp - minMissedDistance) &&
+                  (value > thresholdI2)) {
                 if (missedPeakValue != null) {
                   if (element.$2 > missedPeakValue!) {
-                    missedPeak = element.$1;
-                    missedPeakValue = element.$2;
+                    missedPeakTimestamp = timestamp;
+                    missedPeakValue = value;
                   }
                 } else {
-                  missedPeak = element.$1;
-                  missedPeakValue = element.$2;
+                  missedPeakTimestamp = timestamp;
+                  missedPeakValue = value;
                 }
               }
             });
 
-            if (missedPeak != null) {
-              signalPeaks.insert(signalPeaks.length - 1, missedPeak!);
+            if (missedPeakTimestamp != null) {
+              signalPeaks.insert(signalPeaks.length - 1, missedPeakTimestamp!);
             }
           }
         }
-        lastPeak = peak;
+        lastPeakTimestamp = peakTimestamp;
         lastIndex = index;
         sPKI = 0.125 * peakValue + 0.875 * sPKI;
       } else {
