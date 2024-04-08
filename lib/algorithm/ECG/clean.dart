@@ -1,24 +1,23 @@
 // TODO: compensation for missing data
 
-import 'package:scidart/numdart.dart';
-import 'package:scidart/scidart.dart';
 import 'package:watchtower/algorithm/digital_filters.dart';
 import 'package:watchtower/algorithm/pipeline.dart';
+
+import '../utils.dart';
 
 class CleanPT extends Pipeline {
   @override
   final name = "Pan-Tompkins.clean";
 
-  static const numtaps = 11;
   late final DigitalFilter lowpassFilter, highpassFilter;
 
   CleanPT(int fs) {
-    lowpassFilter = DigitalFilter.lowpass(fs, 15, numtaps: numtaps);
-    highpassFilter = DigitalFilter.highpass(fs, 5, numtaps: numtaps);
+    lowpassFilter = DigitalFilter.lowpass(fs, 15);
+    highpassFilter = DigitalFilter.highpass(fs, 5);
   }
 
   @override
-  Array apply(Array input) {
+  List<double> apply(List<double> input) {
     final lp = lowpassFilter.apply(input);
     final hp = highpassFilter.apply(lp);
     return hp;
@@ -29,16 +28,15 @@ class CleanPowerline extends Pipeline {
   @override
   final name = "Clean powerline interference";
 
-  late final Array window;
+  late final int width;
 
   CleanPowerline(int fs) {
-    final width = fs ~/ 50;
-    window = ones(width);
+    width = fs ~/ 50;
   }
 
   @override
-  Array apply(Array input) {
-    final conv = convolution(input, window);
+  List<double> apply(List<double> input) {
+    final conv = movingWindowAverage(input, width);
     return conv;
   }
 }
@@ -47,17 +45,16 @@ class CleanNK extends Pipeline {
   @override
   final name = "NeuroKit.clean";
 
-  static const numtaps = 11;
   late final DigitalFilter highpassFilter;
   late final Pipeline powerlineCleaner;
 
   CleanNK(int fs) {
-    highpassFilter = DigitalFilter.highpass(fs, 0.5, numtaps: numtaps);
+    highpassFilter = DigitalFilter.highpass(fs, 0.5);
     powerlineCleaner = CleanPowerline(fs);
   }
 
   @override
-  Array apply(Array input) {
+  List<double> apply(List<double> input) {
     final hp = highpassFilter.apply(input);
     final pwrLine = powerlineCleaner.apply(hp);
     return pwrLine;

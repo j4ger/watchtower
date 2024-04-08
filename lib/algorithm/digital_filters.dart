@@ -1,36 +1,30 @@
-import 'package:scidart/numdart.dart';
-import 'package:scidart/scidart.dart';
+import 'package:fili.dart/iir_coeffs.dart';
+import 'package:fili.dart/iir_filter.dart';
+import 'package:fili.dart/calc_cascades.dart';
 
-const defaultNumTaps = 1;
+const filterOrder = 4;
 
 class DigitalFilter {
-  late final Array coefficients;
+  late final IirFilter filter;
+  final coeffCalculator = CalcCascades();
 
-  DigitalFilter.lowpass(int fs, double freq,
-      {int numtaps = defaultNumTaps, String windowType = "blackman"}) {
-    final nyq = fs / 2;
-    final normalizeFreq = freq / nyq;
-
-    coefficients = firwin(numtaps, Array([normalizeFreq]),
-        window: windowType, pass_zero: 'lowpass');
+  DigitalFilter.lowpass(int fs, double freq) {
+    final filterCoeffs = coeffCalculator['lowpass'](FcFsParams(
+        order: filterOrder,
+        characteristic: 'bessel',
+        Fs: fs.toDouble(),
+        Fc: freq));
+    filter = IirFilter(filterCoeffs);
   }
 
-  DigitalFilter.highpass(int fs, double freq,
-      {int numtaps = defaultNumTaps, String windowType = "blackman"}) {
-    final nyq = fs / 2;
-    final normalizeFreq = freq / nyq;
-
-    coefficients = firwin(numtaps, Array([normalizeFreq]),
-        window: windowType, pass_zero: 'highpass');
+  DigitalFilter.highpass(int fs, double freq) {
+    final filterCoeffs = coeffCalculator['highpass'](FcFsParams(
+        order: filterOrder,
+        characteristic: 'bessel',
+        Fs: fs.toDouble(),
+        Fc: freq));
+    filter = IirFilter(filterCoeffs);
   }
 
-  Array apply(Array input) {
-    final fowardResult = lfilter(coefficients, Array([1.0]), input);
-    final backwardResult = lfilter(
-        coefficients,
-        Array([1.0]),
-        arrayReverse(
-            fowardResult)); // TODO: arrayReverse is unnecessarily expensive
-    return arrayReverse(backwardResult);
-  }
+  List<double> apply(List<double> input) => filter.filtfilt(input);
 }

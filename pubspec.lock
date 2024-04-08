@@ -209,6 +209,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "8.0.0+1"
+  "fili.dart":
+    dependency: "direct main"
+    description:
+      path: "fili.dart"
+      relative: true
+    source: path
+    version: "0.0.1"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -256,14 +263,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.6.6"
-  iirjdart:
-    dependency: "direct main"
-    description:
-      name: iirjdart
-      sha256: "5bd8aa6af6ee67473fbf7fbbfc7b992d0bb95768a16aaa62e70613389e564df8"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.0"
   intl:
     dependency: transitive
     description:
@@ -400,13 +399,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.8"
-  scidart:
-    dependency: "direct main"
-    description:
-      path: scidart
-      relative: true
-    source: path
-    version: "0.0.2-dev.13"
   shared_preferences:
     dependency: "direct main"
     description:

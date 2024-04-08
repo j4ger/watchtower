@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
-import 'package:scidart/numdart.dart';
 import 'package:watchtower/buffer_controller.dart';
 
 class ECGData {

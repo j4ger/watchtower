@@ -1,7 +1,7 @@
 import 'package:collection/collection.dart';
-import 'package:scidart/numdart.dart';
-import 'package:scidart/scidart.dart';
 import 'package:watchtower/algorithm/pipeline.dart';
+
+import '../utils.dart';
 
 class PtPeakDetector extends Detector {
   @override
@@ -9,21 +9,19 @@ class PtPeakDetector extends Detector {
 
   late final int fs;
   late final EcgPeakDetector _detector;
-  late final Array window;
+  late final int windowSize;
 
   PtPeakDetector(this.fs) {
     _detector = EcgPeakDetector(fs);
-    final windowSize = (0.12 * fs).toInt();
-    window = ones(windowSize);
+    windowSize = (0.12 * fs).toInt();
   }
 
   @override
-  List<int> rawDetect(Array input, int timestampStart, Array fullInput) {
+  List<int> rawDetect(
+      List<double> input, int timestampStart, List<double> fullInput) {
     final diffed = arrayDiff(input);
-    final squared = Array(diffed.map((element) => element * element).toList());
-    final mwa = convolution(squared, window, fast: false);
-    final zeroCompensation = (0.2 * fs).toInt();
-    mwa.addAll(zeros(zeroCompensation));
+    final squared = arraySquare(diffed);
+    final mwa = movingWindowAverage(squared, windowSize);
 
     final peaks = _detector.rawDetect(mwa, timestampStart, fullInput);
 
@@ -46,9 +44,10 @@ class EcgPeakDetector extends Detector {
   }
 
   @override
-  List<int> rawDetect(Array input, int timestampStart, Array fullInput) {
+  List<int> rawDetect(
+      List<double> input, int timestampStart, List<double> fullInput) {
     final batchPeakStart = signalPeaks.length;
-    final peaks = _findPeaks(input);
+    final peaks = arrayFindPeaks(input);
     peaks.forEachIndexed((index, element) {
       final (peakRawIndex, peakValue) = element;
       final peakTimestamp = peakRawIndex + timestampStart;
@@ -66,6 +65,7 @@ class EcgPeakDetector extends Detector {
 
           if (peakTimestamp - lastPeakTimestamp > rrMissed) {
             // backtrack
+            print("backtrack triggered");
             final thresholdI2 = 0.5 * thresholdI1;
             int? missedPeakTimestamp;
             double? missedPeakValue;
@@ -75,7 +75,7 @@ class EcgPeakDetector extends Detector {
             final backtrackStart = lastPeakTimestamp - fullInputFirstTimestamp;
             final backtrackData = fullInput.sublist(
                 backtrackStart, peakTimestamp - fullInputFirstTimestamp);
-            final backtrackPeaks = _findPeaks(Array(backtrackData));
+            final backtrackPeaks = arrayFindPeaks(backtrackData);
 
             backtrackPeaks.forEach((element) {
               final timestamp = element.$1 + backtrackStart;
@@ -96,6 +96,7 @@ class EcgPeakDetector extends Detector {
             });
 
             if (missedPeakTimestamp != null) {
+              print("backtrack success");
               signalPeaks.insert(signalPeaks.length - 1, missedPeakTimestamp!);
             }
           }
@@ -110,25 +111,4 @@ class EcgPeakDetector extends Detector {
     final batchPeakEnd = signalPeaks.length;
     return ListSlice(signalPeaks, batchPeakStart, batchPeakEnd);
   }
-}
-
-List<(int, double)> _findPeaks(Array a, {double? threshold}) {
-  final N = a.length - 2;
-
-  final List<(int, double)> result = [];
-
-  if (threshold != null) {
-    for (var i = 1; i <= N; i++) {
-      if (a[i - 1] < a[i] && a[i] > a[i + 1] && a[i] >= threshold) {
-        result.add((i, a[i]));
-      }
-    }
-  } else {
-    for (var i = 1; i <= N; i++) {
-      if (a[i - 1] < a[i] && a[i] > a[i + 1]) {
-        result.add((i, a[i]));
-      }
-    }
-  }
-  return result;
 }

@@ -1,7 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:scidart/numdart.dart';
 import 'package:watchtower/algorithm/pipeline.dart';
 import 'package:watchtower/buffer_controller.dart';
 import 'package:community_charts_flutter/community_charts_flutter.dart'
@@ -56,7 +55,7 @@ class Graph extends StatelessWidget {
         }
 
         final List<ECGData> processData = source ?? controller.actualData;
-        Array bufferArray = Array(processData.map((e) => e.value).toList());
+        List<double> bufferArray = processData.map((e) => e.value).toList();
         if (pipelines != null) {
           for (final step in pipelines!) {
             bufferArray = step.apply(bufferArray);
