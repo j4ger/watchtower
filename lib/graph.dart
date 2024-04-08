@@ -62,6 +62,14 @@ class Graph extends StatelessWidget {
           }
         }
 
+        final filteredData = mapArrayToData(processData, bufferArray);
+        data.add(charts.Series<ECGData, int>(
+            id: "debug",
+            domainFn: (ECGData item, _) => item.index,
+            measureFn: (ECGData item, _) => item.value,
+            data: filteredData,
+            colorFn: (_, __) => const charts.Color(r: 0x12, g: 0xff, b: 0x59)));
+
         final finalAnnotation =
             annotations ?? detector?.detect(processData, bufferArray);
 
@@ -93,33 +101,30 @@ class Graph extends StatelessWidget {
               colorFn: (_, __) => staleColor));
         }
 
-        return SizedBox(
-            width: 400,
-            height: 300,
-            child: charts.LineChart(
-              data,
-              animate: false,
-              domainAxis: const charts.NumericAxisSpec(
-                  viewport: charts.NumericExtents(0, bufferLength - 1),
-                  renderSpec: charts.NoneRenderSpec()),
-              primaryMeasureAxis: const charts.NumericAxisSpec(
-                  renderSpec: charts.NoneRenderSpec()),
-              behaviors: [charts.RangeAnnotation(rangeAnnotations)],
-            ));
+        return Column(children: [
+          // TODO: remove this wrapper
+          SizedBox(
+              height: 300,
+              child: charts.LineChart(
+                data,
+                animate: false,
+                domainAxis: const charts.NumericAxisSpec(
+                    viewport: charts.NumericExtents(0, bufferLength - 1),
+                    renderSpec: charts.NoneRenderSpec()),
+                primaryMeasureAxis: const charts.NumericAxisSpec(
+                    renderSpec: charts.NoneRenderSpec()),
+                behaviors: [charts.RangeAnnotation(rangeAnnotations)],
+              )),
+        ]);
       });
 }
 
 const hiddenLength = packLength;
 
 const freshColor = charts.Color(r: 0xdb, g: 0x16, b: 0x16);
-const staleColor = charts.Color(r: 0xee, g: 0xaa, b: 0xaa);
+const staleColor = charts.Color(r: 0xee, g: 0xcc, b: 0xcc);
 
 const hiddenColor = charts.Color(r: 0xfe, g: 0xfe, b: 0xfe);
-
-const freshAnnotationColor = charts.Color(r: 0xff, g: 0x12, b: 0x12);
-const staleAnnotationColor = charts.Color(r: 0xff, g: 0x79, b: 0x68);
-
-const markLength = 1;
 
 const upperLimit = 1;
 const lowerLimit = -0.8;
