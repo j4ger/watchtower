@@ -54,8 +54,6 @@ class EcgPeakDetector extends Detector {
       final peak = peakRawIndex + timestampStart;
 
       final thresholdI1 = nPKI + 0.25 * (sPKI - nPKI);
-      print(
-          "peak: ${peak}, lastPeak: ${lastPeak}, minPeakDistance: ${minPeakDistance}");
       if (peakValue > thresholdI1 && peak > lastPeak + minPeakDistance) {
         signalPeaks.add(peak);
 

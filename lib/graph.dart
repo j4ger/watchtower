@@ -8,15 +8,12 @@ import 'package:community_charts_flutter/community_charts_flutter.dart'
     as charts;
 import 'package:watchtower/ecg_data.dart';
 
-const displayStart = 2 * packLength;
-
-const rendererId = "a";
-
 class Graph extends StatelessWidget {
   final List<ECGData>? source;
   final List<int>? annotations;
   final List<Pipeline>? pipelines;
   final Detector? detector;
+
   const Graph(
       {this.source,
       this.annotations,
@@ -28,6 +25,7 @@ class Graph extends StatelessWidget {
   Widget build(BuildContext context) =>
       GetBuilder<BufferController>(builder: (controller) {
         final buffer = source ?? controller.buffer;
+
         int freshStart, freshEnd;
         if (controller.cursorIndex > bufferLength) {
           freshStart = controller.cursorIndex - bufferLength;
@@ -36,23 +34,13 @@ class Graph extends StatelessWidget {
           freshStart = 0;
           freshEnd = controller.cursorIndex;
         }
+
         final staleStart = controller.cursorIndex + hiddenLength;
-        final data = [
-          charts.Series<ECGData, int>(
-              id: "fresh",
-              domainFn: (ECGData item, _) => item.index,
-              measureFn: (ECGData item, _) => item.value,
-              data: ListSlice(buffer, freshStart, freshEnd),
-              colorFn: (_, __) => freshColor) as charts.Series<dynamic, int>
-        ];
+
+        final List<charts.Series<ECGData, int>> data = [];
+
         final List<charts.RangeAnnotationSegment<int>> rangeAnnotations = [];
         if (staleStart < bufferLength) {
-          data.add(charts.Series<ECGData, int>(
-              id: "stale",
-              domainFn: (ECGData item, _) => item.index,
-              measureFn: (ECGData item, _) => item.value,
-              data: ListSlice(buffer, staleStart, bufferLength),
-              colorFn: (_, __) => staleColor) as charts.Series<dynamic, int>);
           rangeAnnotations.add(charts.RangeAnnotationSegment(
               freshEnd, staleStart, charts.RangeAnnotationAxisType.domain,
               color: hiddenColor));
@@ -74,18 +62,38 @@ class Graph extends StatelessWidget {
             bufferArray = step.apply(bufferArray);
           }
         }
-        final finalAnnotations =
+
+        final finalAnnotation =
             annotations ?? detector?.detect(processData, bufferArray);
-        if (finalAnnotations != null && finalAnnotations.isNotEmpty) {
-          data.add(charts.Series<int, int>(
-              id: "annotations",
-              domainFn: (int index, _) => index % bufferLength,
-              domainLowerBoundFn: (_, __) => null,
-              domainUpperBoundFn: (_, __) => null,
-              measureFn: (_, __) => null,
-              data: finalAnnotations) as charts.Series<dynamic, int>
-            ..setAttribute(charts.rendererIdKey, rendererId));
+
+        if (finalAnnotation != null) {
+          data.add(charts.Series<ECGData, int>(
+              id: "fresh",
+              domainFn: (ECGData item, _) => item.index,
+              measureFn: (ECGData item, _) => item.value,
+              measureUpperBoundFn: (ECGData item, _) =>
+                  finalAnnotation.contains(item.timestamp) ? upperLimit : null,
+              measureLowerBoundFn: (ECGData item, _) =>
+                  finalAnnotation.contains(item.timestamp) ? lowerLimit : null,
+              data: ListSlice(buffer, freshStart, freshEnd),
+              colorFn: (_, __) => freshColor));
+        } else {
+          data.add(charts.Series<ECGData, int>(
+              id: "fresh",
+              domainFn: (ECGData item, _) => item.index,
+              measureFn: (ECGData item, _) => item.value,
+              data: ListSlice(buffer, freshStart, freshEnd),
+              colorFn: (_, __) => freshColor));
         }
+        if (staleStart < bufferLength) {
+          data.add(charts.Series<ECGData, int>(
+              id: "stale",
+              domainFn: (ECGData item, _) => item.index,
+              measureFn: (ECGData item, _) => item.value,
+              data: ListSlice(buffer, staleStart, bufferLength),
+              colorFn: (_, __) => staleColor));
+        }
+
         return SizedBox(
             width: 400,
             height: 300,
@@ -98,10 +106,6 @@ class Graph extends StatelessWidget {
               primaryMeasureAxis: const charts.NumericAxisSpec(
                   renderSpec: charts.NoneRenderSpec()),
               behaviors: [charts.RangeAnnotation(rangeAnnotations)],
-              customSeriesRenderers: [
-                charts.SymbolAnnotationRendererConfig(
-                    customRendererId: rendererId)
-              ],
             ));
       });
 }
@@ -109,8 +113,16 @@ class Graph extends StatelessWidget {
 const hiddenLength = packLength;
 
 const freshColor = charts.Color(r: 0xdb, g: 0x16, b: 0x16);
-const staleColor = charts.Color(r: 0xee, g: 0x72, b: 0x64);
+const staleColor = charts.Color(r: 0xee, g: 0xaa, b: 0xaa);
 
 const hiddenColor = charts.Color(r: 0xfe, g: 0xfe, b: 0xfe);
+
+const freshAnnotationColor = charts.Color(r: 0xff, g: 0x12, b: 0x12);
+const staleAnnotationColor = charts.Color(r: 0xff, g: 0x79, b: 0x68);
+
+const markLength = 1;
+
+const upperLimit = 1;
+const lowerLimit = -0.8;
 
 // TODO: stale color tween
