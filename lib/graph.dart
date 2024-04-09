@@ -7,11 +7,16 @@ import 'package:community_charts_flutter/community_charts_flutter.dart'
     as charts;
 import 'package:watchtower/ecg_data.dart';
 
+import 'algorithm/ECG/find_peaks.dart';
+
+const DEBUG = false;
+
 class Graph extends StatelessWidget {
   final List<ECGData>? source;
   final List<int>? annotations;
   final List<Pipeline>? pipelines;
-  final Detector? detector;
+  // final Detector? detector;
+  final PtPeakDetector? detector;
 
   const Graph(
       {this.source,
@@ -62,13 +67,28 @@ class Graph extends StatelessWidget {
           }
         }
 
-        final filteredData = mapArrayToData(processData, bufferArray);
-        data.add(charts.Series<ECGData, int>(
-            id: "debug",
-            domainFn: (ECGData item, _) => item.index,
-            measureFn: (ECGData item, _) => item.value,
-            data: filteredData,
-            colorFn: (_, __) => const charts.Color(r: 0x12, g: 0xff, b: 0x59)));
+        if (DEBUG) {
+          final filteredData = mapArrayToData(processData, bufferArray);
+          data.add(charts.Series<ECGData, int>(
+              id: "debug",
+              domainFn: (ECGData item, _) => item.index,
+              measureFn: (ECGData item, _) => item.value,
+              data: filteredData,
+              colorFn: (_, __) =>
+                  const charts.Color(r: 0x12, g: 0xff, b: 0x59)));
+
+          final preprocessedArray =
+              detector!.preprocess(bufferArray).map((e) => e * 200).toList();
+          final preprocessedData =
+              mapArrayToData(processData, preprocessedArray);
+          data.add(charts.Series<ECGData, int>(
+              id: "debug-preprocessed",
+              domainFn: (ECGData item, _) => item.index,
+              measureFn: (ECGData item, _) => item.value,
+              data: preprocessedData,
+              colorFn: (_, __) =>
+                  const charts.Color(r: 0x12, g: 0x16, b: 0xff)));
+        }
 
         final finalAnnotation =
             annotations ?? detector?.detect(processData, bufferArray);

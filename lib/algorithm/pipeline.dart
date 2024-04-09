@@ -28,15 +28,8 @@ abstract class Detector {
         input.sublist(sliceStart, input.length); // TODO: optimize this
     final rawResult = rawDetect(slice, sliceStartTimestamp, input);
 
-    final currentFirstTimestamp = rawInput.first.timestamp;
-    final lastResultKeepStart =
-        lastResult.indexWhere((e) => e > currentFirstTimestamp);
-    final result = lastResultKeepStart == -1
-        ? rawResult
-        : lastResult.sublist(lastResultKeepStart) + rawResult;
-
-    lastResult = result;
+    lastResult = rawResult;
     lastTimestamp = currentLastTimestamp;
-    return result;
+    return rawResult;
   }
 }

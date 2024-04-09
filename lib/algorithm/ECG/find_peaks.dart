@@ -1,7 +1,10 @@
+import 'package:circular_buffer/circular_buffer.dart';
 import 'package:collection/collection.dart';
 import 'package:watchtower/algorithm/pipeline.dart';
 
 import '../utils.dart';
+
+const peakBufferCapacity = 12;
 
 class PtPeakDetector extends Detector {
   @override
@@ -13,17 +16,25 @@ class PtPeakDetector extends Detector {
 
   PtPeakDetector(this.fs) {
     _detector = EcgPeakDetector(fs);
-    windowSize = (0.12 * fs).toInt();
+    windowSize = fs ~/ 18;
+  }
+
+  List<double> preprocess(List<double> input) {
+    final diffed = arrayDiff(input);
+    final squared = arraySquare(diffed);
+    final mwa = movingWindowAverage(squared, windowSize);
+
+    return mwa;
   }
 
   @override
   List<int> rawDetect(
       List<double> input, int timestampStart, List<double> fullInput) {
-    final diffed = arrayDiff(input);
-    final squared = arraySquare(diffed);
-    final mwa = movingWindowAverage(squared, windowSize);
+    final mwa = preprocess(input);
 
-    final peaks = _detector.rawDetect(mwa, timestampStart, fullInput);
+    final peaks = _detector.rawDetect(
+        mwa, timestampStart, preprocess(fullInput) // TODO: optimize this
+        );
 
     return peaks;
   }
@@ -34,19 +45,18 @@ class EcgPeakDetector extends Detector {
   final name = "ECG Peak Detector";
 
   late final int minPeakDistance, minMissedDistance;
-  double sPKI = 0.0, nPKI = 0.0;
-  final List<int> signalPeaks = [];
+  double sPKI = 0.015, nPKI = 0.008;
+  final CircularBuffer<int> signalPeaks = CircularBuffer(peakBufferCapacity);
   int lastPeakTimestamp = 0, lastIndex = -1;
 
   EcgPeakDetector(int fs) {
     minPeakDistance = (0.3 * fs).toInt();
-    minMissedDistance = (0.3 * fs).toInt();
+    minMissedDistance = (0.25 * fs).toInt();
   }
 
   @override
   List<int> rawDetect(
       List<double> input, int timestampStart, List<double> fullInput) {
-    final batchPeakStart = signalPeaks.length;
     final peaks = arrayFindPeaks(input);
     peaks.forEachIndexed((index, element) {
       final (peakRawIndex, peakValue) = element;
@@ -74,7 +84,8 @@ class EcgPeakDetector extends Detector {
                 timestampStart + input.length - fullInput.length;
             final backtrackStart = lastPeakTimestamp - fullInputFirstTimestamp;
             final backtrackData = fullInput.sublist(
-                backtrackStart, peakTimestamp - fullInputFirstTimestamp);
+                backtrackStart >= 0 ? backtrackStart : 0,
+                peakTimestamp - fullInputFirstTimestamp);
             final backtrackPeaks = arrayFindPeaks(backtrackData);
 
             backtrackPeaks.forEach((element) {
@@ -108,7 +119,6 @@ class EcgPeakDetector extends Detector {
         nPKI = 0.125 * peakValue + 0.875 * nPKI;
       }
     });
-    final batchPeakEnd = signalPeaks.length;
-    return ListSlice(signalPeaks, batchPeakStart, batchPeakEnd);
+    return signalPeaks.toList(); // TODO: optimize this?
   }
 }
