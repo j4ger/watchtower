@@ -1,8 +1,11 @@
+import 'package:collection/collection.dart';
 import 'package:watchtower/ecg_data.dart';
+
+const heartRateUpdateRatio = 0.5;
 
 abstract class Pipeline {
   abstract final String name;
-  List<double> apply(List<double> input);
+  List<ECGData> apply(List<ECGData> input);
 }
 
 abstract class Detector {
@@ -11,10 +14,10 @@ abstract class Detector {
   List<int> lastResult = [];
 
   /// This should return a List containing the timestamps of peaks
-  List<int> rawDetect(
-      List<double> input, int timestampStart, List<double> fullInput);
+  List<int> rawDetect(List<ECGData> input, List<ECGData> backtrackBuffer);
 
-  List<int> detect(List<ECGData> rawInput, List<double> input) {
+  /// Here provides a default implementation that utilizes caching. Override if needed.
+  List<int> detect(List<ECGData> rawInput) {
     // use caching to avoid recalculation
     final currentLastTimestamp = rawInput.last.timestamp;
     if (currentLastTimestamp == lastTimestamp) {
@@ -23,10 +26,8 @@ abstract class Detector {
 
     final sliceStart =
         rawInput.indexWhere((e) => e.timestamp == lastTimestamp) + 1;
-    final sliceStartTimestamp = rawInput[sliceStart].timestamp;
-    final slice =
-        input.sublist(sliceStart, input.length); // TODO: optimize this
-    final rawResult = rawDetect(slice, sliceStartTimestamp, input);
+    final slice = ListSlice(rawInput, sliceStart, rawInput.length);
+    final rawResult = rawDetect(slice, rawInput);
 
     lastResult = rawResult;
     lastTimestamp = currentLastTimestamp;

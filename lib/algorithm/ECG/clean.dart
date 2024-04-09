@@ -3,6 +3,7 @@
 import 'package:watchtower/algorithm/digital_filters.dart';
 import 'package:watchtower/algorithm/pipeline.dart';
 
+import '../../ecg_data.dart';
 import '../utils.dart';
 
 class CleanPT extends Pipeline {
@@ -17,7 +18,7 @@ class CleanPT extends Pipeline {
   }
 
   @override
-  List<double> apply(List<double> input) {
+  List<ECGData> apply(List<ECGData> input) {
     final lp = lowpassFilter.apply(input);
     final hp = highpassFilter.apply(lp);
     return hp;
@@ -35,7 +36,7 @@ class CleanPowerline extends Pipeline {
   }
 
   @override
-  List<double> apply(List<double> input) {
+  List<ECGData> apply(List<ECGData> input) {
     final conv = movingWindowAverage(input, width);
     return conv;
   }
@@ -54,7 +55,7 @@ class CleanNK extends Pipeline {
   }
 
   @override
-  List<double> apply(List<double> input) {
+  List<ECGData> apply(List<ECGData> input) {
     final hp = highpassFilter.apply(input);
     final pwrLine = powerlineCleaner.apply(hp);
     return pwrLine;

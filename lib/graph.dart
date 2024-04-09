@@ -59,28 +59,26 @@ class Graph extends StatelessWidget {
               color: hiddenColor));
         }
 
-        final List<ECGData> processData = source ?? controller.actualData;
-        List<double> bufferArray = processData.map((e) => e.value).toList();
+        List<ECGData> processData = source ?? controller.actualData;
         if (pipelines != null) {
           for (final step in pipelines!) {
-            bufferArray = step.apply(bufferArray);
+            processData = step.apply(processData);
           }
         }
 
         if (DEBUG) {
-          final filteredData = mapArrayToData(processData, bufferArray);
           data.add(charts.Series<ECGData, int>(
               id: "debug",
               domainFn: (ECGData item, _) => item.index,
               measureFn: (ECGData item, _) => item.value,
-              data: filteredData,
+              data: processData,
               colorFn: (_, __) =>
                   const charts.Color(r: 0x12, g: 0xff, b: 0x59)));
 
-          final preprocessedArray =
-              detector!.preprocess(bufferArray).map((e) => e * 200).toList();
-          final preprocessedData =
-              mapArrayToData(processData, preprocessedArray);
+          final preprocessedData = detector!
+              .preprocess(processData)
+              .map((e) => ECGData(e.timestamp, e.value * 200))
+              .toList();
           data.add(charts.Series<ECGData, int>(
               id: "debug-preprocessed",
               domainFn: (ECGData item, _) => item.index,
@@ -90,8 +88,7 @@ class Graph extends StatelessWidget {
                   const charts.Color(r: 0x12, g: 0x16, b: 0xff)));
         }
 
-        final finalAnnotation =
-            annotations ?? detector?.detect(processData, bufferArray);
+        final finalAnnotation = annotations ?? detector?.detect(processData);
 
         if (finalAnnotation != null) {
           data.add(charts.Series<ECGData, int>(

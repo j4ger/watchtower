@@ -2,6 +2,7 @@ import 'package:circular_buffer/circular_buffer.dart';
 import 'package:collection/collection.dart';
 import 'package:watchtower/algorithm/pipeline.dart';
 
+import '../../ecg_data.dart';
 import '../utils.dart';
 
 const peakBufferCapacity = 12;
@@ -16,10 +17,10 @@ class PtPeakDetector extends Detector {
 
   PtPeakDetector(this.fs) {
     _detector = EcgPeakDetector(fs);
-    windowSize = fs ~/ 18;
+    windowSize = (fs * 0.075).toInt();
   }
 
-  List<double> preprocess(List<double> input) {
+  List<ECGData> preprocess(List<ECGData> input) {
     final diffed = arrayDiff(input);
     final squared = arraySquare(diffed);
     final mwa = movingWindowAverage(squared, windowSize);
@@ -28,12 +29,11 @@ class PtPeakDetector extends Detector {
   }
 
   @override
-  List<int> rawDetect(
-      List<double> input, int timestampStart, List<double> fullInput) {
+  List<int> rawDetect(List<ECGData> input, List<ECGData> backtrackBuffer) {
     final mwa = preprocess(input);
 
-    final peaks = _detector.rawDetect(
-        mwa, timestampStart, preprocess(fullInput) // TODO: optimize this
+    final peaks = _detector.rawDetect(mwa,
+        preprocess(backtrackBuffer) // TODO: optimize this, maybe lazy evaluate
         );
 
     return peaks;
@@ -45,9 +45,9 @@ class EcgPeakDetector extends Detector {
   final name = "ECG Peak Detector";
 
   late final int minPeakDistance, minMissedDistance;
-  double sPKI = 0.015, nPKI = 0.008;
+  double sPKI = 0.0, nPKI = 0.0;
   final CircularBuffer<int> signalPeaks = CircularBuffer(peakBufferCapacity);
-  int lastPeakTimestamp = 0, lastIndex = -1;
+  int lastPeakTimestamp = 0;
 
   EcgPeakDetector(int fs) {
     minPeakDistance = (0.3 * fs).toInt();
@@ -55,12 +55,11 @@ class EcgPeakDetector extends Detector {
   }
 
   @override
-  List<int> rawDetect(
-      List<double> input, int timestampStart, List<double> fullInput) {
+  List<int> rawDetect(List<ECGData> input, List<ECGData> backtrackBuffer) {
     final peaks = arrayFindPeaks(input);
-    peaks.forEachIndexed((index, element) {
-      final (peakRawIndex, peakValue) = element;
-      final peakTimestamp = peakRawIndex + timestampStart;
+    peaks.forEach((element) {
+      final peakValue = element.value;
+      final peakTimestamp = element.timestamp;
 
       final thresholdI1 = nPKI + 0.25 * (sPKI - nPKI);
       if (peakValue > thresholdI1 &&
@@ -80,22 +79,22 @@ class EcgPeakDetector extends Detector {
             int? missedPeakTimestamp;
             double? missedPeakValue;
 
-            final fullInputFirstTimestamp =
-                timestampStart + input.length - fullInput.length;
-            final backtrackStart = lastPeakTimestamp - fullInputFirstTimestamp;
-            final backtrackData = fullInput.sublist(
+            final backtrackStart =
+                lastPeakTimestamp - backtrackBuffer.first.timestamp;
+            final backtrackData = ListSlice(
+                backtrackBuffer,
                 backtrackStart >= 0 ? backtrackStart : 0,
-                peakTimestamp - fullInputFirstTimestamp);
+                peakTimestamp - backtrackBuffer.first.timestamp);
             final backtrackPeaks = arrayFindPeaks(backtrackData);
 
             backtrackPeaks.forEach((element) {
-              final timestamp = element.$1 + backtrackStart;
-              final value = element.$2;
+              final timestamp = element.timestamp;
+              final value = element.value;
               if ((timestamp > lastPeakTimestamp + minMissedDistance) &&
                   (timestamp < peakTimestamp - minMissedDistance) &&
                   (value > thresholdI2)) {
                 if (missedPeakValue != null) {
-                  if (element.$2 > missedPeakValue!) {
+                  if (element.value > missedPeakValue!) {
                     missedPeakTimestamp = timestamp;
                     missedPeakValue = value;
                   }
@@ -108,12 +107,13 @@ class EcgPeakDetector extends Detector {
 
             if (missedPeakTimestamp != null) {
               print("backtrack success");
-              signalPeaks.insert(signalPeaks.length - 1, missedPeakTimestamp!);
+              final last = signalPeaks.last;
+              signalPeaks[signalPeaks.length - 1] = missedPeakTimestamp!;
+              signalPeaks.add(last);
             }
           }
         }
         lastPeakTimestamp = peakTimestamp;
-        lastIndex = index;
         sPKI = 0.125 * peakValue + 0.875 * sPKI;
       } else {
         nPKI = 0.125 * peakValue + 0.875 * nPKI;

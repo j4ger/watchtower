@@ -1,64 +1,75 @@
-List<double> movingWindowAverage(List<double> input, int windowSize) {
-  final List<double> averages = [];
+import '../ecg_data.dart';
+
+// TODO: something here is causing a stable offset after applying
+// fix it
+
+List<ECGData> movingWindowAverage(List<ECGData> input, int windowSize) {
+  // Pad both ends of the averages list to match the input length
+  final actualLength = input.length - windowSize + 1;
+  final padStartLength = (input.length - actualLength) ~/ 2;
+  final padEndLength = input.length - actualLength - padStartLength;
+
+  final List<ECGData> averages = [];
   double windowSum = 0.0;
 
   // Calculate the initial window sum
   for (int i = 0; i < windowSize; i++) {
-    windowSum += input[i];
+    windowSum += input[i].value;
   }
-  averages.add(windowSum / windowSize);
+  final padStart = windowSum / windowSize;
+  for (int i = 0; i < padStartLength + 1; i++) {
+    averages.add(ECGData(input[i].timestamp, padStart));
+  }
 
   // Calculate the moving window average for the rest of the list
+  final baseIndex = padStartLength - windowSize + 1;
   for (int i = windowSize; i < input.length; i++) {
-    windowSum += input[i] - input[i - windowSize];
-    averages.add(windowSum / windowSize);
+    windowSum += input[i].value - input[i - windowSize].value;
+    averages
+        .add(ECGData(input[i + baseIndex].timestamp, windowSum / windowSize));
   }
 
-  // Pad the end of the averages list to match the input length
-  final padStartLength = (input.length - averages.length) ~/ 2;
-  final padEndLength = input.length - averages.length - padStartLength;
-
-  final padStart = averages.first;
-  final padEnd = averages.last;
-  for (int i = 0; i < padStartLength; i++) {
-    averages.insert(0, padStart);
-  }
+  final padEndIndexStart = averages.length;
+  final padEnd = averages.last.value;
   for (int i = 0; i < padEndLength; i++) {
-    averages.add(padEnd);
+    averages.add(ECGData(input[i + padEndIndexStart].timestamp, padEnd));
   }
-
   return averages;
 }
 
-List<double> arrayDiff(List<double> input) {
-  List<double> differences = [];
+List<ECGData> arrayDiff(List<ECGData> input) {
+  List<ECGData> differences = [];
   for (int i = 0; i < input.length - 1; i++) {
-    differences.add(input[i + 1] - input[i]);
+    differences
+        .add(ECGData(input[i].timestamp, input[i + 1].value - input[i].value));
   }
 
-  differences.add(0); // pad the end
+  differences.add(
+      ECGData(input.last.timestamp + 1, differences.last.value)); // pad the end
 
   return differences;
 }
 
-List<double> arraySquare(List<double> input) =>
-    input.map((e) => e * e).toList();
+List<ECGData> arraySquare(List<ECGData> input) =>
+    input.map((e) => ECGData(e.timestamp, e.value * e.value)).toList();
 
-List<(int, double)> arrayFindPeaks(List<double> a, {double? threshold}) {
+List<ECGData> arrayFindPeaks(List<ECGData> a, {double? threshold}) {
   final N = a.length - 2;
 
-  final List<(int, double)> result = [];
+  final List<ECGData> result = [];
 
   if (threshold != null) {
     for (var i = 1; i <= N; i++) {
-      if (a[i - 1] < a[i] && a[i] > a[i + 1] && a[i] >= threshold) {
-        result.add((i, a[i]));
+      if (a[i - 1].value < a[i].value &&
+          a[i].value > a[i + 1].value &&
+          a[i].value >= threshold) {
+        result.add(a[i]);
       }
     }
   } else {
     for (var i = 1; i <= N; i++) {
-      if (a[i - 1] < a[i] && a[i] > a[i + 1]) {
-        result.add((i, a[i]));
+      if (a[i - 1].value < a[i].value && a[i].value > a[i + 1].value) {
+        result.add(a[i]);
       }
     }
   }
