@@ -121,10 +121,11 @@ class Graph extends StatelessWidget {
               colorFn: (_, __) => staleColor));
         }
 
-        return Column(children: [
+        return Stack(children: [
           // TODO: remove this wrapper
-          SizedBox(
+          Container(
               height: 300,
+              padding: const EdgeInsets.all(10),
               child: charts.LineChart(
                 data,
                 animate: false,
@@ -135,10 +136,28 @@ class Graph extends StatelessWidget {
                     renderSpec: charts.NoneRenderSpec()),
                 behaviors: [charts.RangeAnnotation(rangeAnnotations)],
               )),
-          if (detector!.heartRate != null)
-            SmoothCounter(count: detector!.heartRate!.toInt())
-          else
-            const Text("--")
+          Container(
+              padding: const EdgeInsets.fromLTRB(0, 30, 30, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  detector!.heartRate != null
+                      ? SmoothCounter(
+                          count: detector!.heartRate!.toInt(),
+                          textStyle: const TextStyle(
+                              fontSize: 30,
+                              height: 1,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.5))
+                      : const Text("--",
+                          style: TextStyle(
+                              fontSize: 30, letterSpacing: 4, height: 1)),
+                  const SizedBox(width: 3),
+                  const Text("bpm",
+                      style: TextStyle(fontSize: 12, color: Colors.black87))
+                ],
+              ))
         ]);
       });
 }
