@@ -11,11 +11,10 @@ class PtPeakDetector extends Detector {
   @override
   final name = "Pan-Tompkins Peak Detector";
 
-  late final int fs;
   late final EcgPeakDetector _detector;
   late final int windowSize;
 
-  PtPeakDetector(this.fs) {
+  PtPeakDetector(super.fs) {
     _detector = EcgPeakDetector(fs);
     windowSize = (fs * 0.075).toInt();
   }
@@ -49,7 +48,7 @@ class EcgPeakDetector extends Detector {
   final CircularBuffer<int> signalPeaks = CircularBuffer(peakBufferCapacity);
   int lastPeakTimestamp = 0;
 
-  EcgPeakDetector(int fs) {
+  EcgPeakDetector(super.fs) {
     minPeakDistance = (0.3 * fs).toInt();
     minMissedDistance = (0.25 * fs).toInt();
   }
@@ -57,7 +56,7 @@ class EcgPeakDetector extends Detector {
   @override
   List<int> rawDetect(List<ECGData> input, List<ECGData> backtrackBuffer) {
     final peaks = arrayFindPeaks(input);
-    peaks.forEach((element) {
+    for (final element in peaks) {
       final peakValue = element.value;
       final peakTimestamp = element.timestamp;
 
@@ -87,7 +86,7 @@ class EcgPeakDetector extends Detector {
                 peakTimestamp - backtrackBuffer.first.timestamp);
             final backtrackPeaks = arrayFindPeaks(backtrackData);
 
-            backtrackPeaks.forEach((element) {
+            for (final element in backtrackPeaks) {
               final timestamp = element.timestamp;
               final value = element.value;
               if ((timestamp > lastPeakTimestamp + minMissedDistance) &&
@@ -103,7 +102,7 @@ class EcgPeakDetector extends Detector {
                   missedPeakValue = value;
                 }
               }
-            });
+            }
 
             if (missedPeakTimestamp != null) {
               print("backtrack success");
@@ -118,7 +117,8 @@ class EcgPeakDetector extends Detector {
       } else {
         nPKI = 0.125 * peakValue + 0.875 * nPKI;
       }
-    });
+    }
+
     return signalPeaks.toList(); // TODO: optimize this?
   }
 }

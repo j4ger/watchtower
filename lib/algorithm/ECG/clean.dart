@@ -12,7 +12,7 @@ class CleanPT extends Pipeline {
 
   late final DigitalFilter lowpassFilter, highpassFilter;
 
-  CleanPT(int fs) {
+  CleanPT(super.fs) {
     lowpassFilter = DigitalFilter.lowpass(fs, 15);
     highpassFilter = DigitalFilter.highpass(fs, 5);
   }
@@ -31,7 +31,7 @@ class CleanPowerline extends Pipeline {
 
   late final int width;
 
-  CleanPowerline(int fs) {
+  CleanPowerline(super.fs) {
     width = fs ~/ 50;
   }
 
@@ -49,7 +49,7 @@ class CleanNK extends Pipeline {
   late final DigitalFilter highpassFilter;
   late final Pipeline powerlineCleaner;
 
-  CleanNK(int fs) {
+  CleanNK(super.fs) {
     highpassFilter = DigitalFilter.highpass(fs, 0.5);
     powerlineCleaner = CleanPowerline(fs);
   }

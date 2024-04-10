@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:smooth_counter/smooth_counter.dart';
 import 'package:watchtower/algorithm/pipeline.dart';
 import 'package:watchtower/buffer_controller.dart';
 import 'package:community_charts_flutter/community_charts_flutter.dart'
@@ -132,6 +133,10 @@ class Graph extends StatelessWidget {
                     renderSpec: charts.NoneRenderSpec()),
                 behaviors: [charts.RangeAnnotation(rangeAnnotations)],
               )),
+          if (detector!.heartRate != null)
+            SmoothCounter(count: detector!.heartRate!.toInt())
+          else
+            const Text("--")
         ]);
       });
 }

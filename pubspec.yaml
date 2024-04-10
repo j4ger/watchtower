@@ -46,6 +46,7 @@ dependencies:
   community_charts_flutter: ^1.0.2
   fili.dart:
     path: ./fili.dart
+  smooth_counter: ^0.1.0
 
 
 dev_dependencies:
