@@ -23,10 +23,14 @@ class BufferController extends GetxController
   Duration interval = defaultInterval;
 
   int get cursorIndex => lastPackStart + tween.value;
+  int get frameStartTimestamp =>
+      lastPackEndTimestamp - lastPackEndTimestamp % bufferLength;
+
   int lastIndex = 0;
 
   int lastFreshIndex = 0;
   int lastPackStart = 0;
+  int lastPackEndTimestamp = 0;
 
   late AnimationController animationController;
   late Animation<int> tween;
@@ -67,6 +71,7 @@ class BufferController extends GetxController
     lastTimestamp = now;
     lastFreshIndex = items.last.index;
     lastPackStart = items.first.index;
+    lastPackEndTimestamp = items.last.timestamp;
   }
 
   int? heartRate;

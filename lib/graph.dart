@@ -90,26 +90,28 @@ class Graph extends StatelessWidget {
         }
 
         final finalAnnotation = annotations ?? detector?.detect(processData);
-
         if (finalAnnotation != null) {
-          data.add(charts.Series<ECGData, int>(
-              id: "fresh",
-              domainFn: (ECGData item, _) => item.index,
-              measureFn: (ECGData item, _) => item.value,
-              measureUpperBoundFn: (ECGData item, _) =>
-                  finalAnnotation.contains(item.timestamp) ? upperLimit : null,
-              measureLowerBoundFn: (ECGData item, _) =>
-                  finalAnnotation.contains(item.timestamp) ? lowerLimit : null,
-              data: ListSlice(buffer, freshStart, freshEnd),
-              colorFn: (_, __) => freshColor));
-        } else {
-          data.add(charts.Series<ECGData, int>(
-              id: "fresh",
-              domainFn: (ECGData item, _) => item.index,
-              measureFn: (ECGData item, _) => item.value,
-              data: ListSlice(buffer, freshStart, freshEnd),
-              colorFn: (_, __) => freshColor));
+          for (final timestamp in finalAnnotation) {
+            if (timestamp < controller.frameStartTimestamp) {
+              continue;
+            }
+            final index = timestamp % bufferLength;
+            final lowerIndex = index - markLength;
+            final upperIndex = index + markLength;
+            if (upperIndex < controller.cursorIndex && upperIndex > 0) {
+              rangeAnnotations.add(charts.RangeAnnotationSegment(
+                  lowerIndex, upperIndex, charts.RangeAnnotationAxisType.domain,
+                  color: markColor));
+            }
+          }
         }
+
+        data.add(charts.Series<ECGData, int>(
+            id: "fresh",
+            domainFn: (ECGData item, _) => item.index,
+            measureFn: (ECGData item, _) => item.value,
+            data: ListSlice(buffer, freshStart, freshEnd),
+            colorFn: (_, __) => freshColor));
         if (staleStart < bufferLength) {
           data.add(charts.Series<ECGData, int>(
               id: "stale",
@@ -150,5 +152,8 @@ const hiddenColor = charts.Color(r: 0xfe, g: 0xfe, b: 0xfe);
 
 const upperLimit = 1;
 const lowerLimit = -0.8;
+
+const markLength = 3;
+const markColor = charts.Color(r: 0xff, g: 0xbf, b: 0xb8);
 
 // TODO: stale color tween
