@@ -1,7 +1,11 @@
 import 'package:collection/collection.dart';
 import 'package:watchtower/ecg_data.dart';
 
+import '../buffer_controller.dart';
+
 const heartRateUpdateRatio = 0.5;
+const bufferLookbackLength = 6 * packLength;
+const minimumPeaksForStable = 6;
 
 abstract class Pipeline {
   late final int fs;
@@ -33,27 +37,16 @@ abstract class Detector {
     }
 
     final sliceStart =
-        rawInput.indexWhere((e) => e.timestamp == lastTimestamp) + 1;
-    final slice = ListSlice(rawInput, sliceStart, rawInput.length);
+        rawInput.indexWhere((e) => e.timestamp == lastTimestamp) +
+            1 -
+            bufferLookbackLength;
+    final slice =
+        ListSlice(rawInput, sliceStart > 0 ? sliceStart : 0, rawInput.length);
     final rawResult = rawDetect(slice, rawInput);
 
-    final newIndex = rawResult.indexWhere((e) => e > lastTimestamp);
-    if (rawResult.length != 1 && newIndex != -1) {
-      // new peaks were found
-      final double newHeartRate;
-      if (newIndex != 0) {
-        // there are old peaks
-        final lastOldTimestamp = rawResult[newIndex - 1];
-        final lastNewTimestamp = rawResult.last;
-        final count = rawResult.length - newIndex + 1;
-        newHeartRate = 60 * fs / (lastNewTimestamp - lastOldTimestamp) * count;
-      } else {
-        // there are no old peaks
-        final firstNewTimestamp = rawResult[newIndex];
-        final lastNewTimestamp = rawResult.last;
-        final count = rawResult.length - newIndex;
-        newHeartRate = 60 * fs / (firstNewTimestamp - lastNewTimestamp) * count;
-      }
+    if (rawResult.length > minimumPeaksForStable) {
+      final newHeartRate =
+          60 * fs / (rawResult.last - rawResult.first) * (rawResult.length + 1);
       if (_heartRate != null) {
         _heartRate = newHeartRate * heartRateUpdateRatio +
             _heartRate! * (1 - heartRateUpdateRatio);

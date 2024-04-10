@@ -3,7 +3,8 @@ import '../ecg_data.dart';
 // TODO: something here is causing a stable offset after applying
 // fix it
 
-List<ECGData> movingWindowAverage(List<ECGData> input, int windowSize) {
+List<ECGData> movingWindowAverage(List<ECGData> input, int windowSize,
+    {int compensationLength = 0}) {
   // Pad both ends of the averages list to match the input length
   final actualLength = input.length - windowSize + 1;
   final padStartLength = (input.length - actualLength) ~/ 2;
@@ -33,6 +34,13 @@ List<ECGData> movingWindowAverage(List<ECGData> input, int windowSize) {
   final padEnd = averages.last.value;
   for (int i = 0; i < padEndLength; i++) {
     averages.add(ECGData(input[i + padEndIndexStart].timestamp, padEnd));
+  }
+
+  // TODO: optimize this
+  for (int i = input.length - 1;
+      i > input.length - 1 - compensationLength;
+      i--) {
+    averages[i].value = 0;
   }
   return averages;
 }

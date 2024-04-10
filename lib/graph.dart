@@ -153,7 +153,7 @@ const hiddenColor = charts.Color(r: 0xfe, g: 0xfe, b: 0xfe);
 const upperLimit = 1;
 const lowerLimit = -0.8;
 
-const markLength = 3;
+const markLength = 40;
 const markColor = charts.Color(r: 0xff, g: 0xbf, b: 0xb8);
 
 // TODO: stale color tween

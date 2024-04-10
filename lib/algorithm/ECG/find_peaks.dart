@@ -22,7 +22,8 @@ class PtPeakDetector extends Detector {
   List<ECGData> preprocess(List<ECGData> input) {
     final diffed = arrayDiff(input);
     final squared = arraySquare(diffed);
-    final mwa = movingWindowAverage(squared, windowSize);
+    final mwa = movingWindowAverage(squared, windowSize,
+        compensationLength: (fs * 0.2).toInt());
 
     return mwa;
   }

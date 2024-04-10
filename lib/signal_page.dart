@@ -90,7 +90,8 @@ class SignalPage extends StatelessWidget {
   }
 }
 
-const fs = 360;
+const fs =
+    333; // for csv data exported from https://archive.physionet.org/cgi-bin/atm/ATM
 final List<Pipeline> pipelines = [CleanPT(fs), CleanNK(fs)];
 final List<Detector> detectors = [];
 
