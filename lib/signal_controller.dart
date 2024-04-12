@@ -38,7 +38,6 @@ class SignalController extends GetxController {
         final packet = eventArgs.value;
         final data = ECGData.fromPacket(packet);
         bufferController.extend(data);
-        bufferController.doDetection();
       },
     );
 

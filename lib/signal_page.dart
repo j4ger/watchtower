@@ -76,10 +76,11 @@ class SignalPage extends StatelessWidget {
                   : Container()),
               // const ECGGraph(),
               Obx(() => bufferController.percentage.value == 1.0
-                  ? Graph(
+                  ? Expanded(
+                      child: Graph(
                       pipelines: [CleanPT(fs)],
                       detector: PtPeakDetector(fs),
-                    )
+                    ))
                   : Container()),
               // PipelineGraph(pipelines, detectors)
             ],

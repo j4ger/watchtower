@@ -50,7 +50,6 @@ class MockController extends GetxController {
         i++;
       }
       bufferController.extend(newData);
-      bufferController.doDetection();
     });
   }
 

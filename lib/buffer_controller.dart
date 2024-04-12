@@ -17,6 +17,8 @@ const defaultInterval = Duration(milliseconds: delayMs);
 
 class BufferController extends GetxController
     with GetSingleTickerProviderStateMixin {
+  final debug = false.obs;
+
   final List<ECGData> buffer = [];
 
   DateTime? lastTimestamp;
@@ -55,6 +57,7 @@ class BufferController extends GetxController
   }
 
   void extend(List<ECGData> items) {
+    // TODO: optimize this
     for (ECGData item in items) {
       _add(item);
     }
@@ -72,14 +75,6 @@ class BufferController extends GetxController
     lastFreshIndex = items.last.index;
     lastPackStart = items.first.index;
     lastPackEndTimestamp = items.last.timestamp;
-  }
-
-  int? heartRate;
-
-  // final detector = QRSDetector(250, 0.9);
-
-  void doDetection() {
-    // TODO:
   }
 
   final percentage = 0.0.obs;

@@ -10,7 +10,7 @@ import 'package:watchtower/ecg_data.dart';
 
 import 'algorithm/ECG/find_peaks.dart';
 
-const DEBUG = false;
+// const DEBUG = false; // moved to BufferController
 
 const GRAPH_UPPER_LIMIT = 2;
 const GRAPH_LOWER_LIMIT = -2;
@@ -70,24 +70,26 @@ class Graph extends StatelessWidget {
           }
         }
 
-        if (DEBUG) {
+        if (controller.debug.value) {
           data.add(charts.Series<ECGData, int>(
               id: "debug",
               domainFn: (ECGData item, _) => item.index,
-              measureFn: (ECGData item, _) => item.value,
-              data: processData,
+              measureFn: (ECGData item, _) => item.value - 1, // added offset
+              data: ListSlice(processData,
+                  bufferLength - controller.lastFreshIndex, bufferLength - 1),
               colorFn: (_, __) =>
                   const charts.Color(r: 0x12, g: 0xff, b: 0x59)));
 
           final preprocessedData = detector!
               .preprocess(processData)
-              .map((e) => ECGData(e.timestamp, e.value * 200))
+              .map((e) => ECGData(e.timestamp, e.value * 400))
               .toList();
           data.add(charts.Series<ECGData, int>(
               id: "debug-preprocessed",
               domainFn: (ECGData item, _) => item.index,
-              measureFn: (ECGData item, _) => item.value,
-              data: preprocessedData,
+              measureFn: (ECGData item, _) => item.value - 2, // added offset
+              data: ListSlice(preprocessedData,
+                  bufferLength - controller.lastFreshIndex, bufferLength - 1),
               colorFn: (_, __) =>
                   const charts.Color(r: 0x12, g: 0x16, b: 0xff)));
         }
@@ -124,44 +126,62 @@ class Graph extends StatelessWidget {
               colorFn: (_, __) => staleColor));
         }
 
-        return Stack(children: [
-          Container(
+        return Column(children: [
+          SizedBox(
               height: 300,
-              padding: const EdgeInsets.all(10),
-              child: charts.LineChart(
-                data,
-                animate: false,
-                domainAxis: const charts.NumericAxisSpec(
-                    viewport: charts.NumericExtents(0, bufferLength - 1),
-                    renderSpec: charts.NoneRenderSpec()),
-                primaryMeasureAxis: const charts.NumericAxisSpec(
-                    renderSpec: charts.NoneRenderSpec(),
-                    viewport: charts.NumericExtents(
-                        GRAPH_LOWER_LIMIT, GRAPH_UPPER_LIMIT)),
-                behaviors: [charts.RangeAnnotation(rangeAnnotations)],
-              )),
-          Container(
-              padding: const EdgeInsets.fromLTRB(0, 30, 30, 0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  detector!.heartRate != null
-                      ? SmoothCounter(
-                          count: detector!.heartRate!.toInt(),
-                          textStyle: const TextStyle(
-                              fontSize: 30,
-                              height: 1,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.5))
-                      : const Text("--",
-                          style: TextStyle(
-                              fontSize: 30, letterSpacing: 4, height: 1)),
-                  const SizedBox(width: 3),
-                  const Text("bpm",
-                      style: TextStyle(fontSize: 12, color: Colors.black87))
-                ],
-              ))
+              child: Stack(children: [
+                Container(
+                    height: 300,
+                    padding: const EdgeInsets.all(10),
+                    child: charts.LineChart(
+                      data,
+                      animate: false,
+                      domainAxis: const charts.NumericAxisSpec(
+                          viewport: charts.NumericExtents(0, bufferLength - 1),
+                          renderSpec: charts.NoneRenderSpec()),
+                      primaryMeasureAxis: const charts.NumericAxisSpec(
+                          renderSpec: charts.NoneRenderSpec(),
+                          viewport: charts.NumericExtents(
+                              GRAPH_LOWER_LIMIT, GRAPH_UPPER_LIMIT)),
+                      behaviors: [charts.RangeAnnotation(rangeAnnotations)],
+                    )),
+                Container(
+                    padding: const EdgeInsets.fromLTRB(0, 30, 30, 0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        detector!.heartRate != null
+                            ? SmoothCounter(
+                                count: detector!.heartRate!.toInt(),
+                                textStyle: const TextStyle(
+                                    fontSize: 30,
+                                    height: 1,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -0.5))
+                            : const Text("--",
+                                style: TextStyle(
+                                    fontSize: 30, letterSpacing: 4, height: 1)),
+                        const SizedBox(width: 3),
+                        const Text("bpm",
+                            style:
+                                TextStyle(fontSize: 12, color: Colors.black87))
+                      ],
+                    ))
+              ])),
+          Expanded(
+              child: ListView(children: [
+            ListTile(
+              leading: const Icon(Icons.bug_report),
+              title: const Text("Debug"),
+              trailing: Switch(
+                value: controller.debug.value,
+                onChanged: (bool value) {
+                  controller.debug.value = value;
+                },
+              ),
+            )
+          ]))
         ]);
       });
 }
