@@ -12,6 +12,9 @@ import 'algorithm/ECG/find_peaks.dart';
 
 const DEBUG = false;
 
+const GRAPH_UPPER_LIMIT = 2;
+const GRAPH_LOWER_LIMIT = -2;
+
 class Graph extends StatelessWidget {
   final List<ECGData>? source;
   final List<int>? annotations;
@@ -98,7 +101,7 @@ class Graph extends StatelessWidget {
             final index = timestamp % bufferLength;
             final lowerIndex = index - markLength;
             final upperIndex = index + markLength;
-            if (upperIndex < controller.cursorIndex && upperIndex > 0) {
+            if (lowerIndex < controller.cursorIndex && upperIndex > 0) {
               rangeAnnotations.add(charts.RangeAnnotationSegment(
                   lowerIndex, upperIndex, charts.RangeAnnotationAxisType.domain,
                   color: markColor));
@@ -122,7 +125,6 @@ class Graph extends StatelessWidget {
         }
 
         return Stack(children: [
-          // TODO: remove this wrapper
           Container(
               height: 300,
               padding: const EdgeInsets.all(10),
@@ -133,7 +135,9 @@ class Graph extends StatelessWidget {
                     viewport: charts.NumericExtents(0, bufferLength - 1),
                     renderSpec: charts.NoneRenderSpec()),
                 primaryMeasureAxis: const charts.NumericAxisSpec(
-                    renderSpec: charts.NoneRenderSpec()),
+                    renderSpec: charts.NoneRenderSpec(),
+                    viewport: charts.NumericExtents(
+                        GRAPH_LOWER_LIMIT, GRAPH_UPPER_LIMIT)),
                 behaviors: [charts.RangeAnnotation(rangeAnnotations)],
               )),
           Container(
