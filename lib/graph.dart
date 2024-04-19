@@ -16,23 +16,16 @@ const GRAPH_UPPER_LIMIT = 2;
 const GRAPH_LOWER_LIMIT = -2;
 
 class Graph extends StatelessWidget {
-  final List<ECGData>? source;
-  final List<int>? annotations;
   final List<Pipeline>? pipelines;
   // final Detector? detector;
   final PtPeakDetector? detector;
 
-  const Graph(
-      {this.source,
-      this.annotations,
-      this.pipelines,
-      this.detector,
-      super.key});
+  const Graph({this.pipelines, this.detector, super.key});
 
   @override
   Widget build(BuildContext context) =>
       GetBuilder<BufferController>(builder: (controller) {
-        final buffer = source ?? controller.buffer;
+        final buffer = controller.buffer;
 
         int freshStart, freshEnd;
         if (controller.cursorIndex > bufferLength) {
@@ -63,7 +56,7 @@ class Graph extends StatelessWidget {
               color: hiddenColor));
         }
 
-        List<ECGData> processData = source ?? controller.actualData;
+        List<ECGData> processData = controller.actualData;
         if (pipelines != null) {
           for (final step in pipelines!) {
             processData = step.apply(processData);
@@ -94,7 +87,7 @@ class Graph extends StatelessWidget {
                   const charts.Color(r: 0x12, g: 0x16, b: 0xff)));
         }
 
-        final finalAnnotation = annotations ?? detector?.detect(processData);
+        final finalAnnotation = detector?.detect(processData);
         if (finalAnnotation != null) {
           for (final timestamp in finalAnnotation) {
             if (timestamp < controller.frameStartTimestamp) {
@@ -110,6 +103,21 @@ class Graph extends StatelessWidget {
             }
           }
         }
+
+        final List<(int, int)> intervalHistory = [];
+        if (finalAnnotation != null) {
+          for (int i = 1; i < finalAnnotation.length; i++) {
+            intervalHistory
+                .add((i - 1, finalAnnotation[i] - finalAnnotation[i - 1]));
+          }
+        }
+        final intervalHistoryData = [
+          charts.Series(
+              id: "interval",
+              domainFn: (data, _) => data.$1,
+              measureFn: (data, _) => data.$2,
+              data: intervalHistory)
+        ];
 
         data.add(charts.Series<ECGData, int>(
             id: "fresh",
@@ -146,7 +154,7 @@ class Graph extends StatelessWidget {
                       behaviors: [charts.RangeAnnotation(rangeAnnotations)],
                     )),
                 Container(
-                    padding: const EdgeInsets.fromLTRB(0, 30, 30, 0),
+                    padding: const EdgeInsets.fromLTRB(30, 30, 30, 0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       crossAxisAlignment: CrossAxisAlignment.end,
@@ -169,6 +177,13 @@ class Graph extends StatelessWidget {
                       ],
                     ))
               ])),
+          Container(
+              padding: const EdgeInsets.fromLTRB(30, 40, 30, 0),
+              height: 300,
+              child: charts.LineChart(intervalHistoryData,
+                  animate: false, // TODO: avoid triggering rebuild
+                  defaultRenderer:
+                      charts.LineRendererConfig(includePoints: true))),
           Expanded(
               child: ListView(children: [
             ListTile(
