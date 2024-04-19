@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:get/get.dart';
 import 'package:watchtower/ecg_data.dart';
 
 import '../buffer_controller.dart';
@@ -23,8 +24,6 @@ abstract class Detector {
   int lastTimestamp = 0;
   List<int> lastResult = [];
 
-  double? _heartRate;
-
   /// This should return a List containing the timestamps of peaks
   List<int> rawDetect(List<ECGData> input, List<ECGData> backtrackBuffer);
 
@@ -47,11 +46,11 @@ abstract class Detector {
     if (rawResult.length > minimumPeaksForStable) {
       final newHeartRate =
           60 * fs / (rawResult.last - rawResult.first) * (rawResult.length + 1);
-      if (_heartRate != null) {
-        _heartRate = newHeartRate * heartRateUpdateRatio +
-            _heartRate! * (1 - heartRateUpdateRatio);
+      if (heartRate.value != null) {
+        heartRate.value = newHeartRate * heartRateUpdateRatio +
+            heartRate.value! * (1 - heartRateUpdateRatio);
       } else {
-        _heartRate = newHeartRate;
+        heartRate.value = newHeartRate;
       }
     }
 
@@ -61,5 +60,5 @@ abstract class Detector {
     return rawResult;
   }
 
-  double? get heartRate => _heartRate;
+  final heartRate = Rx<double?>(null);
 }

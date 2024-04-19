@@ -5,6 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:watchtower/ecg_data.dart';
 
+import 'algorithm/ECG/find_peaks.dart';
+import 'algorithm/pipeline.dart';
+import 'main.dart';
+
 const largeBufferLength = 2500; // 2500 / 250 s^-1 = 10s
 
 const bufferLength = 600;
@@ -17,6 +21,12 @@ const defaultInterval = Duration(milliseconds: delayMs);
 
 class BufferController extends GetxController
     with GetSingleTickerProviderStateMixin {
+  final List<Pipeline>? pipelines;
+  // final Detector? detector;
+  final PtPeakDetector detector;
+
+  BufferController({this.pipelines, required this.detector});
+
   final debug = false.obs;
 
   final List<ECGData> buffer = [];
@@ -45,6 +55,11 @@ class BufferController extends GetxController
     lastPackStart = 0;
     buffer.clear();
     interval = defaultInterval;
+
+    processData.clear();
+    preprocessedData.clear();
+    finalAnnotation.clear();
+    intervalHistory.clear();
   }
 
   void _add(ECGData item) {
@@ -75,6 +90,8 @@ class BufferController extends GetxController
     lastFreshIndex = items.last.index;
     lastPackStart = items.first.index;
     lastPackEndTimestamp = items.last.timestamp;
+
+    process();
   }
 
   final percentage = 0.0.obs;
@@ -85,6 +102,41 @@ class BufferController extends GetxController
   List<ECGData> get actualData =>
       ListSlice(buffer, lastFreshIndex + 1, bufferLength) +
       ListSlice(buffer, 0, lastFreshIndex + 1);
+
+  final processData = <ECGData>[].obs;
+  final preprocessedData = <ECGData>[].obs;
+  final finalAnnotation = <int>[].obs;
+  final intervalHistory = <(int, int)>[].obs;
+
+  void process() {
+    List<ECGData> newProcessData = actualData;
+    if (pipelines != null) {
+      for (final step in pipelines!) {
+        newProcessData = step.apply(newProcessData);
+      }
+    }
+    processData.value = newProcessData;
+
+    if (debug.value) {
+      preprocessedData.value = detector
+          .preprocess(newProcessData)
+          .map((e) => ECGData(e.timestamp, e.value * 400))
+          .toList();
+    }
+
+    finalAnnotation.value = detector.detect(newProcessData);
+
+    final List<(int, int)> newIntervalHistory = [];
+    for (int i = 1; i < finalAnnotation.length; i++) {
+      // TODO: calculate time in ms
+      final newValue =
+          (finalAnnotation[i] - finalAnnotation[i - 1]) * 1000 ~/ fs;
+      newIntervalHistory.add((i - 1, newValue));
+    }
+    intervalHistory.value = newIntervalHistory;
+  }
+
+  Rx<double?> get heartRate => detector.heartRate;
 
   @override
   void onInit() {

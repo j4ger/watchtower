@@ -1,9 +1,6 @@
 import 'package:bluetooth_low_energy/bluetooth_low_energy.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:watchtower/algorithm/ECG/clean.dart';
-import 'package:watchtower/algorithm/ECG/find_peaks.dart';
-import 'package:watchtower/algorithm/pipeline.dart';
 import 'package:watchtower/buffer_controller.dart';
 import 'package:watchtower/graph.dart';
 import 'package:watchtower/mock_device.dart';
@@ -20,7 +17,7 @@ class SignalPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bufferController = Get.put(BufferController());
+    final bufferController = Get.find<BufferController>();
     if (target.isMock) {
       mockController = Get.find<MockController>();
     } else {
@@ -76,11 +73,7 @@ class SignalPage extends StatelessWidget {
                   : Container()),
               // const ECGGraph(),
               Obx(() => bufferController.percentage.value == 1.0
-                  ? Expanded(
-                      child: Graph(
-                      pipelines: [CleanPT(fs)],
-                      detector: PtPeakDetector(fs),
-                    ))
+                  ? Expanded(child: Graph())
                   : Container()),
               // PipelineGraph(pipelines, detectors)
             ],
@@ -90,10 +83,5 @@ class SignalPage extends StatelessWidget {
     );
   }
 }
-
-const fs =
-    333; // for csv data exported from https://archive.physionet.org/cgi-bin/atm/ATM
-final List<Pipeline> pipelines = [CleanPT(fs), CleanNK(fs)];
-final List<Detector> detectors = [];
 
 // TODO: use theme.colorscheme
