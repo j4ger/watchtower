@@ -173,6 +173,8 @@ class Graph extends StatelessWidget {
                 domainAxis: const charts.NumericAxisSpec(
                     viewport: charts.NumericExtents(0, peakBufferCapacity - 2),
                     renderSpec: charts.NoneRenderSpec()),
+                primaryMeasureAxis: const charts.NumericAxisSpec(
+                    viewport: charts.NumericExtents(250, 1200)),
                 behaviors: [
                   if (controller.heartRate.value != null)
                     charts.RangeAnnotation([
