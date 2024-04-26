@@ -212,9 +212,11 @@ packages:
   "fili.dart":
     dependency: "direct main"
     description:
-      path: "fili.dart"
-      relative: true
-    source: path
+      path: "."
+      ref: HEAD
+      resolved-ref: "1060b51d86669c33f6141fe1ad31a0ff1cc5ceaa"
+      url: "https://github.com/nightscape/fili.dart"
+    source: git
     version: "0.0.1"
   flutter:
     dependency: "direct main"
