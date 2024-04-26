@@ -16,7 +16,7 @@ class Graph extends StatelessWidget {
   Graph({super.key});
 
   @override
-  Widget build(BuildContext context) => Column(children: [
+  Widget build(BuildContext context) => ListView(children: [
         SizedBox(
             height: 300,
             child: Stack(children: [
@@ -61,27 +61,36 @@ class Graph extends StatelessWidget {
                     }
 
                     if (controller.debug.value) {
+                      final List<ECGData> processData =
+                          controller.processData.isNotEmpty
+                              ? ListSlice(
+                                  controller.processData,
+                                  bufferLength - controller.lastFreshIndex,
+                                  bufferLength - 1)
+                              : [];
                       data.add(charts.Series<ECGData, int>(
                           id: "debug",
                           domainFn: (ECGData item, _) => item.index,
                           measureFn: (ECGData item, _) =>
                               item.value - 1, // added offset
-                          data: ListSlice(
-                              controller.processData,
-                              bufferLength - controller.lastFreshIndex,
-                              bufferLength - 1),
+                          data: processData,
                           colorFn: (_, __) =>
                               const charts.Color(r: 0x12, g: 0xff, b: 0x59)));
+
+                      final List<ECGData> preprocessedData =
+                          controller.preprocessedData.isNotEmpty
+                              ? ListSlice(
+                                  controller.preprocessedData,
+                                  bufferLength - controller.lastFreshIndex,
+                                  bufferLength - 1)
+                              : [];
 
                       data.add(charts.Series<ECGData, int>(
                           id: "debug-preprocessed",
                           domainFn: (ECGData item, _) => item.index,
                           measureFn: (ECGData item, _) =>
                               item.value - 2, // added offset
-                          data: ListSlice(
-                              controller.preprocessedData,
-                              bufferLength - controller.lastFreshIndex,
-                              bufferLength - 1),
+                          data: preprocessedData,
                           colorFn: (_, __) =>
                               const charts.Color(r: 0x12, g: 0x16, b: 0xff)));
                     }
@@ -187,19 +196,16 @@ class Graph extends StatelessWidget {
                 ],
               );
             })),
-        Expanded(
-            child: ListView(children: [
-          ListTile(
-            leading: const Icon(Icons.bug_report),
-            title: const Text("Debug"),
-            trailing: Switch(
-              value: controller.debug.value,
-              onChanged: (bool value) {
-                controller.debug.value = value;
-              },
-            ),
-          )
-        ]))
+        ListTile(
+          leading: const Icon(Icons.bug_report),
+          title: const Text("Debug"),
+          trailing: Obx(() => Switch(
+                value: controller.debug.value,
+                onChanged: (bool value) {
+                  controller.debug.value = value;
+                },
+              )),
+        )
       ]);
 }
 
