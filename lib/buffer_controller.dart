@@ -59,6 +59,7 @@ class BufferController extends GetxController
     processData.clear();
     preprocessedData.clear();
     finalAnnotation.clear();
+    lastBeatTimestamp = 0;
     intervalHistory.clear();
   }
 
@@ -106,6 +107,7 @@ class BufferController extends GetxController
   final processData = <ECGData>[].obs;
   final preprocessedData = <ECGData>[].obs;
   final finalAnnotation = <int>[].obs;
+  int lastBeatTimestamp = 0;
   final intervalHistory = <(int, int)>[].obs;
 
   void process() {
@@ -126,14 +128,18 @@ class BufferController extends GetxController
 
     finalAnnotation.value = detector.detect(newProcessData);
 
-    final List<(int, int)> newIntervalHistory = [];
-    for (int i = 1; i < finalAnnotation.length; i++) {
-      // TODO: calculate time in ms
-      final newValue =
-          (finalAnnotation[i] - finalAnnotation[i - 1]) * 1000 ~/ fs;
-      newIntervalHistory.add((i - 1, newValue));
+    if (finalAnnotation.isNotEmpty) {
+      if (finalAnnotation.last != lastBeatTimestamp) {
+        List<(int, int)> newIntervalHistory = [];
+        lastBeatTimestamp = finalAnnotation.last;
+        for (int i = 1; i < finalAnnotation.length; i++) {
+          final newValue =
+              (finalAnnotation[i] - finalAnnotation[i - 1]) * 1000 ~/ fs;
+          newIntervalHistory.add((i - 1, newValue));
+        }
+        intervalHistory.value = newIntervalHistory;
+      }
     }
-    intervalHistory.value = newIntervalHistory;
   }
 
   Rx<double?> get heartRate => detector.heartRate;
