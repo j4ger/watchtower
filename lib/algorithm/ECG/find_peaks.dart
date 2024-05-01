@@ -79,20 +79,17 @@ class EcgPeakDetector extends Detector {
             int? missedPeakTimestamp;
             double? missedPeakValue;
 
-            final backtrackStart = lastPeakTimestamp -
+            int backtrackStart = lastPeakTimestamp -
                 backtrackBuffer.first.timestamp +
                 minMissedDistance;
-            final backtrackEnd = peakTimestamp -
+            int backtrackEnd = peakTimestamp -
                 backtrackBuffer.first.timestamp -
                 minMissedDistance;
-            final backtrackData = ListSlice(
-                backtrackBuffer,
-                backtrackStart >= 0 ? backtrackStart : 0,
-                backtrackEnd >= 0
-                    ? backtrackEnd
-                    : backtrackStart >= 0
-                        ? backtrackStart
-                        : 0);
+            backtrackStart = backtrackStart > 0 ? backtrackStart : 0;
+            backtrackEnd =
+                backtrackEnd > backtrackStart ? backtrackEnd : backtrackStart;
+            final backtrackData =
+                ListSlice(backtrackBuffer, backtrackStart, backtrackEnd);
             final backtrackPeaks = arrayFindPeaks(backtrackData);
 
             for (final element in backtrackPeaks) {
