@@ -79,22 +79,28 @@ class EcgPeakDetector extends Detector {
             int? missedPeakTimestamp;
             double? missedPeakValue;
 
-            final backtrackStart =
-                lastPeakTimestamp - backtrackBuffer.first.timestamp;
+            final backtrackStart = lastPeakTimestamp -
+                backtrackBuffer.first.timestamp +
+                minMissedDistance;
+            final backtrackEnd = peakTimestamp -
+                backtrackBuffer.first.timestamp -
+                minMissedDistance;
             final backtrackData = ListSlice(
                 backtrackBuffer,
                 backtrackStart >= 0 ? backtrackStart : 0,
-                peakTimestamp - backtrackBuffer.first.timestamp);
+                backtrackEnd >= 0
+                    ? backtrackEnd
+                    : backtrackStart >= 0
+                        ? backtrackStart
+                        : 0);
             final backtrackPeaks = arrayFindPeaks(backtrackData);
 
             for (final element in backtrackPeaks) {
               final timestamp = element.timestamp;
               final value = element.value;
-              if ((timestamp > lastPeakTimestamp + minMissedDistance) &&
-                  (timestamp < peakTimestamp - minMissedDistance) &&
-                  (value > thresholdI2)) {
+              if (value > thresholdI2) {
                 if (missedPeakValue != null) {
-                  if (element.value > missedPeakValue!) {
+                  if (element.value > missedPeakValue) {
                     missedPeakTimestamp = timestamp;
                     missedPeakValue = value;
                   }
@@ -108,7 +114,7 @@ class EcgPeakDetector extends Detector {
             if (missedPeakTimestamp != null) {
               print("backtrack success");
               final last = signalPeaks.last;
-              signalPeaks[signalPeaks.length - 1] = missedPeakTimestamp!;
+              signalPeaks[signalPeaks.length - 1] = missedPeakTimestamp;
               signalPeaks.add(last);
             }
           }
