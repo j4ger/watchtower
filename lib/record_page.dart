@@ -83,7 +83,7 @@ class RecordController extends GetxController {
         ]);
   }
 
-  Future<void> insertRecord(Record record) async {
+  Future<void> addRecord(Record record) async {
     await db.insert(
       tableName,
       record.toMap(),

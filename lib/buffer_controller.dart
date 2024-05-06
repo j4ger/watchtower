@@ -7,6 +7,7 @@ import 'package:watchtower/ecg_data.dart';
 import 'algorithm/ECG/find_peaks.dart';
 import 'algorithm/pipeline.dart';
 import 'main.dart';
+import 'record_page.dart';
 
 const largeBufferLength = 2500; // 2500 / 250 s^-1 = 10s
 
@@ -68,6 +69,9 @@ class BufferController extends GetxController
     } else {
       buffer.add(item);
       updatePercentage();
+    }
+    if (state() == BufferControllerState.recording) {
+      recordBuffer.add(item);
     }
   }
 
@@ -167,4 +171,29 @@ class BufferController extends GetxController
     animationController.dispose();
     super.dispose();
   }
+
+  final state = BufferControllerState.normal.obs;
+  DateTime? recordStartTime;
+  final List<ECGData> recordBuffer = [];
+
+  void startRecord() {
+    recordStartTime = DateTime.now();
+    state.value = BufferControllerState.recording;
+  }
+
+  Future<void> stopRecord() async {
+    state.value = BufferControllerState.recording;
+    final recordStopTime = DateTime.now();
+    final duration = recordStopTime.difference(recordStartTime!);
+    final record = Record(recordStartTime!, duration, recordBuffer);
+
+    final RecordController recordController = Get.find();
+    await recordController.addRecord(record);
+
+    state.value = BufferControllerState.normal;
+    Get.snackbar("Info", "Record successfully saved.");
+    recordBuffer.clear();
+  }
 }
+
+enum BufferControllerState { normal, recording, saving }

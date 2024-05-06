@@ -7,6 +7,7 @@ import 'package:watchtower/buffer_controller.dart';
 import 'package:community_charts_flutter/community_charts_flutter.dart'
     as charts;
 import 'package:watchtower/ecg_data.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 const GRAPH_UPPER_LIMIT = 2;
 const GRAPH_LOWER_LIMIT = -2;
@@ -145,8 +146,16 @@ class Graph extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(30, 30, 30, 0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
+                      Obx(() =>
+                          controller.state() == BufferControllerState.recording
+                              ? const SizedBox(
+                                  height: 24,
+                                  child: SpinKitDoubleBounce(
+                                      color: Colors.redAccent, size: 24))
+                              : const SizedBox.shrink()),
+                      const SizedBox(width: 6),
                       Obx(() => controller.heartRate.value != null
                           ? SmoothCounter(
                               count: controller.heartRate.value!.toInt(),
@@ -158,8 +167,12 @@ class Graph extends StatelessWidget {
                           : const Text("--",
                               style: TextStyle(
                                   fontSize: 30, letterSpacing: 4, height: 1))),
-                      const SizedBox(width: 3),                      const Text("bpm",
-                          style: TextStyle(fontSize: 12, color: Colors.black87))
+                      const SizedBox(width: 3),
+                      const Padding(
+                          padding: EdgeInsets.only(top: 2),
+                          child: Text("bpm",
+                              style: TextStyle(
+                                  fontSize: 12, color: Colors.black87)))
                     ],
                   ))
             ])),
