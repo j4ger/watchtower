@@ -101,7 +101,11 @@ class BufferController extends GetxController
 
   List<ECGData> get actualData =>
       ListSlice(buffer, lastFreshIndex + 1, bufferLength) +
-      ListSlice(buffer, 0, lastFreshIndex + 1);
+      ListSlice(
+          buffer,
+          0,
+          lastFreshIndex +
+              1); // TODO: optimize this by implementing an alternative indexed read
 
   final processData = <ECGData>[].obs;
   final preprocessedData = <ECGData>[].obs;

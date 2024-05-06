@@ -47,6 +47,8 @@ dependencies:
   fili.dart:
     git: https://github.com/nightscape/fili.dart
   smooth_counter: ^0.1.0
+  sqflite: ^2.3.3+1
+  path: ^1.9.0
 
 
 dev_dependencies:
@@ -59,6 +61,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^3.0.1
+  sqflite_common_ffi: ^2.3.3
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

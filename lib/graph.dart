@@ -158,8 +158,7 @@ class Graph extends StatelessWidget {
                           : const Text("--",
                               style: TextStyle(
                                   fontSize: 30, letterSpacing: 4, height: 1))),
-                      const SizedBox(width: 3),
-                      const Text("bpm",
+                      const SizedBox(width: 3),                      const Text("bpm",
                           style: TextStyle(fontSize: 12, color: Colors.black87))
                     ],
                   ))

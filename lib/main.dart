@@ -1,14 +1,23 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:watchtower/signal_page.dart';
 import 'package:get/get.dart';
 import 'package:watchtower/target_page.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'algorithm/ECG/clean.dart';
 import 'algorithm/ECG/find_peaks.dart';
 import 'buffer_controller.dart';
+import 'record_page.dart';
 
-void main() {
+Future main() async {
   Get.put(BufferController(pipelines: pipelines, detector: detector));
+  Get.put(RecordController());
+  if (Platform.isWindows || Platform.isLinux) {
+    sqfliteFfiInit();
+  }
+  databaseFactory = databaseFactoryFfi; // TODO: test this on mobile platforms
   runApp(const MyApp());
 }
 
@@ -33,9 +42,9 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// TODO: use getx to simplify code
 // TODO: use flutter/packages - animations - shared axis for transitions
 // TODO: dark mode
+// TODO: unified error logging
 
 const fs =
     333; // for csv data exported from https://archive.physionet.org/cgi-bin/atm/ATM
