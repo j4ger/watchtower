@@ -36,7 +36,8 @@ class MyApp extends StatelessWidget {
         GetPage(
           name: "/signal",
           page: () => SignalPage(),
-        )
+        ),
+        GetPage(name: "/record", page: () => RecordPage())
       ],
     );
   }

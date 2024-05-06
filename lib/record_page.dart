@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:flutter/widgets.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 import 'ecg_data.dart';
@@ -13,21 +13,26 @@ import 'ecg_data.dart';
 const String dbName = "watchtower.db";
 const String tableName = "records";
 
+DateFormat dateFormatter = DateFormat('yyyy-MM-dd kk:mm:ss');
+
 class Record {
-  final DateTime timestamp;
+  final DateTime startTime;
+  final Duration duration;
   final List<ECGData> data;
 
-  Record(this.timestamp, this.data);
+  Record(this.startTime, this.duration, this.data);
 
   Map<String, Object?> toMap() {
     return {
-      'timestamp': timestamp.millisecondsSinceEpoch,
+      'start': startTime.millisecondsSinceEpoch,
+      'duration': duration.inMilliseconds,
       'data': ECGData.serialize(data),
     };
   }
 
   @override
-  String toString() => "record at $timestamp with ${data.length} samples";
+  String toString() =>
+      "record from $startTime for $duration with ${data.length} samples";
 }
 
 class RecordController extends GetxController {
@@ -55,10 +60,10 @@ class RecordController extends GetxController {
       join(await getDatabasesPath(), dbName),
       onCreate: (db, version) {
         return db.execute(
-          'CREATE TABLE $tableName(id INTEGER PRIMARY KEY, timestamp INTEGER, data BLOB)',
+          'CREATE TABLE $tableName(id INTEGER PRIMARY KEY, start INTEGER, duration INTEGER, data BLOB)',
         );
       },
-      version: 1,
+      version: 2,
     );
   }
 
@@ -87,16 +92,18 @@ class RecordController extends GetxController {
   }
 
   Future<void> updateRecordList() async {
+    // TODO: lazy loading
     refreshing.value = true;
     final List<Map<String, Object?>> recordMaps = await db.query(tableName);
 
     final result = [
       for (final {
-            'timestamp': timestamp as int,
+            'start': startTime as int,
+            'duration': duration as int,
             'data': data as Uint8List,
           } in recordMaps)
-        Record(DateTime.fromMillisecondsSinceEpoch(timestamp),
-            ECGData.deserialize(data)),
+        Record(DateTime.fromMillisecondsSinceEpoch(startTime),
+            Duration(milliseconds: duration), ECGData.deserialize(data)),
     ];
 
     records.value = result;
@@ -129,9 +136,47 @@ class RecordPage extends StatelessWidget {
             ),
             body: SafeArea(
                 child: Obx(() => ListView.builder(
-                      itemCount: controller.records.length,
-                      itemBuilder: (content, index) =>
-                          Text("$content.timestamp"),
-                    )))));
+                    itemCount: controller.records.length,
+                    itemBuilder: (context, index) {
+                      final theme = Theme.of(context);
+                      final record = controller.records[index];
+                      final startDisplay =
+                          dateFormatter.format(record.startTime);
+                      final durationDisplay = formatDuration(record.duration);
+                      return ListTile(
+                        title: Text(startDisplay),
+                        subtitle: Text(
+                          durationDisplay,
+                          style: theme.textTheme.bodySmall,
+                          softWrap: false,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    })))));
   }
+}
+
+String formatDuration(Duration input) {
+  var seconds = input.inSeconds;
+  final days = seconds ~/ Duration.secondsPerDay;
+  seconds -= days * Duration.secondsPerDay;
+  final hours = seconds ~/ Duration.secondsPerHour;
+  seconds -= hours * Duration.secondsPerHour;
+  final minutes = seconds ~/ Duration.secondsPerMinute;
+  seconds -= minutes * Duration.secondsPerMinute;
+
+  final List<String> tokens = [];
+  if (days != 0) {
+    tokens.add('${days}d');
+  }
+  if (tokens.isNotEmpty || hours != 0) {
+    tokens.add('${hours}h');
+  }
+  if (tokens.isNotEmpty || minutes != 0) {
+    tokens.add('${minutes}m');
+  }
+  tokens.add('${seconds}s');
+
+  return tokens.join(':');
 }
