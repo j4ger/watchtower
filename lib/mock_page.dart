@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'bluetooth_page.dart';
 import 'buffer_controller.dart';
 import 'mock_device.dart';
 import 'main.dart';
@@ -22,36 +21,6 @@ class Target {
   Target(this.type, {this.path, this.device});
 
   bool get isMock => type == TargetType.mock;
-}
-
-class TargetPage extends StatelessWidget {
-  const TargetPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return DefaultTabController(
-        initialIndex: 0,
-        length: 2,
-        child: Scaffold(
-          appBar: AppBar(
-              title: const Text("Select device"),
-              bottom: const TabBar(
-                tabs: [
-                  Tab(icon: Icon(Icons.description), text: "Mock"),
-                  Tab(icon: Icon(Icons.bluetooth), text: "Bluetooth")
-                ],
-              )),
-          body: SafeArea(
-              child: TabBarView(children: [
-            MockPage(),
-            BluetoothPage(),
-          ])),
-          bottomNavigationBar: BottomAppBar(
-              color: Colors.white,
-              elevation: 0,
-              child: Center(child: Image.asset("assets/logo.png"))),
-        ));
-  }
 }
 
 class MockPageController extends GetxController {

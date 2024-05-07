@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:watchtower/signal_page.dart';
 import 'package:get/get.dart';
-import 'package:watchtower/target_page.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'algorithm/ECG/clean.dart';
@@ -11,6 +10,7 @@ import 'algorithm/ECG/find_peaks.dart';
 import 'bluetooth_page.dart';
 import 'buffer_controller.dart';
 import 'record_page.dart';
+import 'mock_page.dart';
 
 Future main() async {
   Get.lazyPut(() => BufferController(pipelines: pipelines, detector: detector));
@@ -19,11 +19,12 @@ Future main() async {
     sqfliteFfiInit();
   }
   databaseFactory = databaseFactoryFfi; // TODO: test this on mobile platforms
-  runApp(const App());
+  runApp(App());
 }
 
 class App extends StatelessWidget {
-  const App({super.key});
+  final selectedIndex = 0.obs;
+  App({super.key});
 
   // This widget is the root of your application.
   @override
@@ -36,23 +37,33 @@ class App extends StatelessWidget {
         initialRoute: '/bluetooth',
         builder: (context, child) => Scaffold(
               key: scaffoldKey,
-              drawer: NavigationDrawer(
-                onDestinationSelected: (index) {
-                  Get.toNamed("/${navigationList[index].name}");
-                },
-                children: [
-                  // TODO: header pic
-                  ...navigationList.map((entry) => NavigationDrawerDestination(
-                      label: Text(entry.title),
-                      icon: Icon(entry.icon),
-                      selectedIcon: Icon(entry.selectedIcon)))
-                ],
-              ),
+              drawer: Obx(() => NavigationDrawer(
+                    selectedIndex: selectedIndex(),
+                    onDestinationSelected: (index) {
+                      selectedIndex.value = index;
+                      Get.toNamed("/${navigationList[index].name}");
+                      scaffoldKey.currentState!.closeDrawer();
+                    },
+                    children: [
+                      Padding(
+                          padding: const EdgeInsets.fromLTRB(28, 16, 24, 10),
+                          child: Center(child: Image.asset("assets/logo.png"))),
+                      ...navigationList.where((item) => !item.hidden).map(
+                          (entry) => NavigationDrawerDestination(
+                              label: Text(entry.title),
+                              icon: Icon(entry.icon),
+                              selectedIcon: Icon(entry.selectedIcon)))
+                    ],
+                  )),
               body: child,
             ),
         getPages: navigationList
+            .where((item) => !item.hidden)
             .map((entry) => GetPage(
-                name: "/${entry.name}", page: entry.page, title: entry.title))
+                name: "/${entry.name}",
+                page: entry.page,
+                title: entry.title,
+                transition: Transition.native))
             .toList());
   }
 }
@@ -74,7 +85,8 @@ final List<AppPage> navigationList = [
   AppPage("mock", "Setup Mock Device", () => MockPage(), Icons.file_open,
       Icons.file_open_outlined),
   AppPage("signal", "View Signal", () => SignalPage(), Icons.timeline,
-      Icons.timeline_outlined),
+      Icons.timeline_outlined,
+      hidden: true),
   AppPage("record", "Record Management", () => RecordPage(), Icons.save,
       Icons.save_rounded)
 ];
@@ -85,7 +97,9 @@ class AppPage {
   final Widget Function() page;
   final IconData icon;
   final IconData selectedIcon;
-  AppPage(this.name, this.title, this.page, this.icon, this.selectedIcon);
+  final bool hidden;
+  AppPage(this.name, this.title, this.page, this.icon, this.selectedIcon,
+      {this.hidden = false});
 }
 
 // TODO: extract components into their own files
@@ -105,12 +119,8 @@ class DefaultAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       leading: showDrawerButton
           ? IconButton(
-              icon: Icon(scaffoldState?.isDrawerOpen ?? false
-                  ? Icons.menu_open
-                  : Icons.menu),
-              onPressed: scaffoldState?.isDrawerOpen ?? false
-                  ? scaffoldState?.closeDrawer
-                  : scaffoldState?.openDrawer,
+              icon: const Icon(Icons.menu),
+              onPressed: scaffoldState?.openDrawer,
             )
           : null,
       title: Text(title),
@@ -132,11 +142,3 @@ Widget makePage(String title, Widget body,
       body: SafeArea(child: body),
       floatingActionButton: floatingActionButton,
     );
-
-class RootScaffold {
-  static openDrawer(BuildContext context) {
-    final ScaffoldState? scaffoldState =
-        context.findRootAncestorStateOfType<ScaffoldState>();
-    scaffoldState?.openDrawer();
-  }
-}

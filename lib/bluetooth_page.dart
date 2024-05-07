@@ -4,7 +4,7 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter/material.dart';
 import 'package:bluetooth_low_energy/bluetooth_low_energy.dart';
 import 'package:get/get.dart';
-import 'package:watchtower/target_page.dart';
+import 'package:watchtower/mock_page.dart';
 
 import 'buffer_controller.dart';
 import 'rssi_widget.dart';
