@@ -6,3 +6,11 @@ inputs:
     url: github:maximoffua/flutter.nix/stable
     overlays:
       - default
+  nixpkgs-stable:
+    url: github:NixOS/nixpkgs/23.05
+  android-nixpkgs:
+    url: github:tadfisher/android-nixpkgs/main
+    inputs:
+      nixpkgs:
+        follows: nixpkgs
+impure: true
