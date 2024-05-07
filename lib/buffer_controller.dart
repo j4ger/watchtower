@@ -191,7 +191,7 @@ class BufferController extends GetxController
     await recordController.addRecord(record);
 
     state.value = BufferControllerState.normal;
-    Get.snackbar("Info", "Record successfully saved.");
+    snackbar("Info", "Record successfully saved.");
     recordBuffer.clear();
   }
 }

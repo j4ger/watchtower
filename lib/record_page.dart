@@ -66,6 +66,7 @@ class RecordController extends GetxController {
       },
       version: 2,
     );
+    updateRecordList();
   }
 
   void onCrashed(Object error, StackTrace stackTrace) {
@@ -90,6 +91,7 @@ class RecordController extends GetxController {
       record.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    updateRecordList();
   }
 
   Future<void> updateRecordList() async {
@@ -122,24 +124,28 @@ class RecordPage extends StatelessWidget {
     return makePage(
       "Record Management",
       SafeArea(
-          child: Obx(() => ListView.builder(
-              itemCount: controller.records.length,
-              itemBuilder: (context, index) {
-                final theme = Theme.of(context);
-                final record = controller.records[index];
-                final startDisplay = dateFormatter.format(record.startTime);
-                final durationDisplay = formatDuration(record.duration);
-                return ListTile(
-                  title: Text(startDisplay),
-                  subtitle: Text(
-                    durationDisplay,
-                    style: theme.textTheme.bodySmall,
-                    softWrap: false,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                );
-              }))),
+          child: Obx(() => ListView.separated(
+                padding: const EdgeInsets.all(8),
+                itemCount: controller.records.length,
+                itemBuilder: (context, index) {
+                  final theme = Theme.of(context);
+                  final record = controller.records[index];
+                  final startDisplay = dateFormatter.format(record.startTime);
+                  final durationDisplay = formatDuration(record.duration);
+                  return ListTile(
+                    title: Text(startDisplay),
+                    subtitle: Text(
+                      durationDisplay,
+                      style: theme.textTheme.bodySmall,
+                      softWrap: false,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                },
+                separatorBuilder: (BuildContext context, int index) =>
+                    const Divider(),
+              ))),
       actions: [
         Obx(() => controller.refreshing()
             ? SpinKitFadingCircle(size: 24)

@@ -96,10 +96,10 @@ class MockPage extends StatelessWidget {
                         Get.toNamed("/signal",
                             arguments: Target(TargetType.mock, path: path));
                       } else {
-                        Get.snackbar("Cancelled", "No file was selected.");
+                        snackbar("Cancelled", "No file was selected.");
                       }
                     } on PlatformException catch (e) {
-                      Get.snackbar("Error", "Failed to open file dialog: $e");
+                      snackbar("Error", "Failed to open file dialog: $e");
                     }
                   },
                   child: const Text("Open File"))

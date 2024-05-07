@@ -13,8 +13,8 @@ import 'record_page.dart';
 import 'mock_page.dart';
 
 Future main() async {
-  Get.lazyPut(() => BufferController(pipelines: pipelines, detector: detector));
-  Get.lazyPut(() => RecordController());
+  Get.put(BufferController(pipelines: pipelines, detector: detector));
+  Get.put(RecordController());
   if (Platform.isWindows || Platform.isLinux) {
     sqfliteFfiInit();
   }
@@ -105,7 +105,6 @@ class AppPage {
 }
 
 // TODO: extract components into their own files
-// TODO: AppBarWrapper that has a fixed button for opening drawer
 
 class DefaultAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -144,3 +143,10 @@ Widget makePage(String title, Widget body,
       body: SafeArea(child: body),
       floatingActionButton: floatingActionButton,
     );
+
+void snackbar(String title, String message) {
+  Get.showSnackbar(GetSnackBar(
+    title: title,
+    message: message,
+  ));
+}

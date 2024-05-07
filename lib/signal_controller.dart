@@ -6,6 +6,8 @@ import 'package:watchtower/bluetooth_device.dart';
 import 'package:watchtower/buffer_controller.dart';
 import 'package:watchtower/ecg_data.dart';
 
+import 'main.dart';
+
 class SignalController extends GetxController {
   final connectionState = false.obs;
   final Peripheral device;
@@ -58,7 +60,7 @@ class SignalController extends GetxController {
 
     await CentralManager.instance.connect(device).onError(
       (error, stackTrace) {
-        Get.snackbar("Error", "Failed to connect to device: $error");
+        snackbar("Error", "Failed to connect to device: $error");
       },
     );
     final services = await CentralManager.instance.discoverGATT(device);
@@ -90,7 +92,7 @@ class SignalController extends GetxController {
   void disconnect() async {
     await CentralManager.instance.disconnect(device).onError(
       (error, stackTrace) {
-        Get.snackbar("Error", "Failed to connect to device: $error");
+        snackbar("Error", "Failed to connect to device: $error");
       },
     );
   }
