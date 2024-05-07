@@ -11,8 +11,9 @@ let
 
   android-sdk = android-nixpkgs.sdk (sdkPkgs: with sdkPkgs; [
     cmdline-tools-latest
-    build-tools-34-0-0
+    build-tools-30-0-3
     platform-tools
+    platforms-android-33
     platforms-android-34
   ]);
 in {
@@ -25,7 +26,7 @@ in {
   languages.java = {
     enable = true;
     gradle.enable = true;
-    jdk.package = pkgs.jdk;
+    jdk.package = pkgs.jdk11;
   };
 
   packages = with pkgs; [ gnome.zenity yad sqlite jdk android-sdk android-tools ];

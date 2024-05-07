@@ -19,8 +19,8 @@ Future main() async {
   Get.put(RecordController());
   if (Platform.isWindows || Platform.isLinux) {
     sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi; // TODO: test this on mobile platforms
   }
-  databaseFactory = databaseFactoryFfi; // TODO: test this on mobile platforms
   runApp(App());
 }
 
