@@ -41,15 +41,15 @@ class App extends StatelessWidget {
                     selectedIndex: selectedIndex(),
                     onDestinationSelected: (index) {
                       selectedIndex.value = index;
-                      Get.toNamed("/${navigationList[index].name}");
+                      Get.toNamed("/${shownNavigationList[index].name}");
                       scaffoldKey.currentState!.closeDrawer();
                     },
                     children: [
                       Padding(
                           padding: const EdgeInsets.fromLTRB(28, 16, 24, 10),
                           child: Center(child: Image.asset("assets/logo.png"))),
-                      ...navigationList.where((item) => !item.hidden).map(
-                          (entry) => NavigationDrawerDestination(
+                      ...shownNavigationList.map((entry) =>
+                          NavigationDrawerDestination(
                               label: Text(entry.title),
                               icon: Icon(entry.icon),
                               selectedIcon: Icon(entry.selectedIcon)))
@@ -58,7 +58,6 @@ class App extends StatelessWidget {
               body: child,
             ),
         getPages: navigationList
-            .where((item) => !item.hidden)
             .map((entry) => GetPage(
                 name: "/${entry.name}",
                 page: entry.page,
@@ -90,6 +89,9 @@ final List<AppPage> navigationList = [
   AppPage("record", "Record Management", () => RecordPage(), Icons.save,
       Icons.save_rounded)
 ];
+
+final List<AppPage> shownNavigationList =
+    navigationList.where((item) => !item.hidden).toList();
 
 class AppPage {
   final String name;
