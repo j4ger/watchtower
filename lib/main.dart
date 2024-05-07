@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:watchtower/signal_page.dart';
 import 'package:get/get.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'algorithm/ECG/clean.dart';
@@ -11,6 +12,7 @@ import 'bluetooth_page.dart';
 import 'buffer_controller.dart';
 import 'record_page.dart';
 import 'mock_page.dart';
+import 'view_record_page.dart';
 
 Future main() async {
   Get.put(BufferController(pipelines: pipelines, detector: detector));
@@ -87,7 +89,10 @@ final List<AppPage> navigationList = [
       Icons.timeline_outlined,
       hidden: true),
   AppPage("record", "Record Management", () => RecordPage(), Icons.save,
-      Icons.save_rounded)
+      Icons.save_rounded),
+  AppPage("viewRecord", "View Signal Record", () => ViewRecordPage(),
+      Icons.troubleshoot, Icons.troubleshoot_outlined,
+      hidden: true)
 ];
 
 final List<AppPage> shownNavigationList =
@@ -150,3 +155,12 @@ void snackbar(String title, String message) {
     message: message,
   ));
 }
+
+Future<T> awaitWithOverlay<T>(
+  Future<T> Function() asyncFunction,
+) async =>
+    Get.showOverlay(
+        asyncFunction: asyncFunction,
+        opacity: 0.5,
+        opacityColor: Colors.black,
+        loadingWidget: const SpinKitRing(color: Colors.white));

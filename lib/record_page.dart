@@ -95,22 +95,49 @@ class RecordController extends GetxController {
   }
 
   Future<void> updateRecordList() async {
-    // TODO: lazy loading
+    // TODO: lazy loading (pagination)
     refreshing.value = true;
-    final List<Map<String, Object?>> recordMaps = await db.query(tableName);
+    await awaitWithOverlay(() async {
+      final List<Map<String, Object?>> recordMaps = await db.query(tableName,
+          columns: [
+            "start",
+            "duration"
+          ]); // don't query data now to avoid long load time
 
-    final result = [
-      for (final {
-            'start': startTime as int,
-            'duration': duration as int,
-            'data': data as Uint8List,
-          } in recordMaps)
-        Record(DateTime.fromMillisecondsSinceEpoch(startTime),
-            Duration(milliseconds: duration), ECGData.deserialize(data)),
-    ];
+      final result = [
+        for (final {
+              'start': startTime as int,
+              'duration': duration as int,
+            } in recordMaps)
+          Record(DateTime.fromMillisecondsSinceEpoch(startTime),
+              Duration(milliseconds: duration), []),
+      ];
 
-    records.value = result;
+      records.value = result;
+    });
     refreshing.value = false;
+  }
+
+  Future<void> removeRecord(DateTime startTimeInput) async {
+    await awaitWithOverlay(() async => db.delete(tableName,
+        where: '"start" = ?',
+        whereArgs: [startTimeInput.millisecondsSinceEpoch]));
+
+    snackbar("Info", "Record successfully removed.");
+    await updateRecordList();
+  }
+
+  Future<Record> getRecordByStartTime(DateTime startTimeInput) async {
+    final resultMap = await db.query(tableName,
+        where: '"start" = ?',
+        whereArgs: [startTimeInput.millisecondsSinceEpoch]);
+    final {
+      'start': startTime as int,
+      'duration': duration as int,
+      'data': data as Uint8List
+    } = resultMap.first;
+    return Record(DateTime.fromMillisecondsSinceEpoch(startTime),
+        Duration(milliseconds: duration), ECGData.deserialize(data));
   }
 }
 
@@ -121,34 +148,72 @@ class RecordPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return makePage(
       "Record Management",
-      SafeArea(
-          child: Obx(() => ListView.separated(
-                padding: const EdgeInsets.all(8),
-                itemCount: controller.records.length,
-                itemBuilder: (context, index) {
-                  final theme = Theme.of(context);
-                  final record = controller.records[index];
-                  final startDisplay = dateFormatter.format(record.startTime);
-                  final durationDisplay = formatDuration(record.duration);
-                  return ListTile(
-                    title: Text(startDisplay),
-                    subtitle: Text(
-                      durationDisplay,
-                      style: theme.textTheme.bodySmall,
-                      softWrap: false,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  );
-                },
-                separatorBuilder: (BuildContext context, int index) =>
-                    const Divider(),
-              ))),
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Obx(() => Padding(
+              padding: const EdgeInsets.only(top: 10, left: 20, right: 20),
+              child: Text(
+                "${controller.records.length} records available.",
+                style: theme.textTheme.titleMedium,
+              ),
+            )),
+        const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20), child: Divider()),
+        Obx(() => Expanded(
+                child: ListView.separated(
+              padding: const EdgeInsets.all(8),
+              itemCount: controller.records.length,
+              itemBuilder: (context, index) {
+                final record = controller.records[index];
+                final startDisplay = dateFormatter.format(record.startTime);
+                final durationDisplay = formatDuration(record.duration);
+                return Dismissible(
+                    key: Key(record.startTime.toString()),
+                    direction: DismissDirection.endToStart,
+                    onDismissed: (_) {
+                      controller.removeRecord(record.startTime);
+                    },
+                    background: Container(
+                        color: Colors.red,
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Icon(
+                              Icons.delete,
+                              color: Colors.white,
+                            ),
+                            Text(
+                              "Delete",
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                            SizedBox(width: 10)
+                          ],
+                        )),
+                    child: ListTile(
+                      title: Text(startDisplay),
+                      subtitle: Text(
+                        durationDisplay,
+                        style: theme.textTheme.bodySmall,
+                        softWrap: false,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      onTap: () {
+                        Get.toNamed("/viewRecord", arguments: record.startTime);
+                      },
+                    ));
+              },
+              separatorBuilder: (BuildContext context, int index) =>
+                  const Divider(),
+            )))
+      ]),
       actions: [
         Obx(() => controller.refreshing()
-            ? SpinKitFadingCircle(size: 24)
+            ? const SpinKitFadingCircle(size: 24, color: Colors.black)
             : IconButton(
                 icon: const Icon(Icons.refresh),
                 iconSize: 24,
@@ -184,3 +249,5 @@ String formatDuration(Duration input) {
 
   return tokens.join(':');
 }
+
+// TODO: delete record
