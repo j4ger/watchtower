@@ -13,6 +13,7 @@ let
     cmdline-tools-latest
     build-tools-30-0-3
     platform-tools
+    platforms-android-32
     platforms-android-33
     platforms-android-34
   ]);

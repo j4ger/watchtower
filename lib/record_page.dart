@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'ecg_data.dart';
 import 'main.dart';
@@ -57,8 +58,9 @@ class RecordController extends GetxController {
 
   void onStartUp() async {
     WidgetsFlutterBinding.ensureInitialized();
+    final docsDirectory = await getApplicationDocumentsDirectory();
     db = await openDatabase(
-      join(await getDatabasesPath(), dbName),
+      join(docsDirectory.path, dbName),
       onCreate: (db, version) {
         return db.execute(
           'CREATE TABLE $tableName(id INTEGER PRIMARY KEY, start INTEGER, duration INTEGER, data BLOB)',
@@ -86,11 +88,12 @@ class RecordController extends GetxController {
   }
 
   Future<void> addRecord(Record record) async {
-    await db.insert(
+    final res = await db.insert(
       tableName,
       record.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    print(res);
     updateRecordList();
   }
 
