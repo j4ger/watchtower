@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 import 'ecg_data.dart';
+import 'main.dart';
 
 const String dbName = "watchtower.db";
 const String tableName = "records";
@@ -118,42 +119,39 @@ class RecordPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-        child: Scaffold(
-            appBar: AppBar(
-              title: const Text("Record Management"),
-              actions: [
-                Obx(() => controller.refreshing()
-                    ? SpinKitFadingCircle(size: 24)
-                    : IconButton(
-                        icon: const Icon(Icons.refresh),
-                        iconSize: 24,
-                        onPressed: () {
-                          controller.updateRecordList();
-                        },
-                      ))
-              ],
-            ),
-            body: SafeArea(
-                child: Obx(() => ListView.builder(
-                    itemCount: controller.records.length,
-                    itemBuilder: (context, index) {
-                      final theme = Theme.of(context);
-                      final record = controller.records[index];
-                      final startDisplay =
-                          dateFormatter.format(record.startTime);
-                      final durationDisplay = formatDuration(record.duration);
-                      return ListTile(
-                        title: Text(startDisplay),
-                        subtitle: Text(
-                          durationDisplay,
-                          style: theme.textTheme.bodySmall,
-                          softWrap: false,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      );
-                    })))));
+    return makePage(
+      "Record Management",
+      SafeArea(
+          child: Obx(() => ListView.builder(
+              itemCount: controller.records.length,
+              itemBuilder: (context, index) {
+                final theme = Theme.of(context);
+                final record = controller.records[index];
+                final startDisplay = dateFormatter.format(record.startTime);
+                final durationDisplay = formatDuration(record.duration);
+                return ListTile(
+                  title: Text(startDisplay),
+                  subtitle: Text(
+                    durationDisplay,
+                    style: theme.textTheme.bodySmall,
+                    softWrap: false,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }))),
+      actions: [
+        Obx(() => controller.refreshing()
+            ? SpinKitFadingCircle(size: 24)
+            : IconButton(
+                icon: const Icon(Icons.refresh),
+                iconSize: 24,
+                onPressed: () {
+                  controller.updateRecordList();
+                },
+              ))
+      ],
+    );
   }
 }
 

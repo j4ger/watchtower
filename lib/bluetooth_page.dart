@@ -9,6 +9,7 @@ import 'package:watchtower/target_page.dart';
 import 'buffer_controller.dart';
 import 'rssi_widget.dart';
 import 'signal_controller.dart';
+import 'main.dart';
 
 // TODO: timeout and stop
 
@@ -98,8 +99,9 @@ class BluetoothPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        body: Column(
+    return makePage(
+        "Select Bluetooth Device",
+        Column(
           children: [
             const SizedBox(height: 10),
             Row(children: [

@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'bluetooth_page.dart';
 import 'buffer_controller.dart';
 import 'mock_device.dart';
+import 'main.dart';
 
 const previousFileKey = "PreviousFile";
 
@@ -83,53 +84,56 @@ class MockPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-        alignment: AlignmentDirectional.center,
-        child: Column(children: [
-          const SizedBox(
-            height: 10,
-          ),
-          Obx(() => controller.previousFile.value == ""
-              ? Container()
-              : FilledButton(
-                  child: const Text("Load Previous"),
-                  onPressed: () {
-                    controller.bufferController.reset();
-                    Get.put(MockController(controller.previousFile.value,
-                        controller.bufferController));
-                    Get.toNamed("/signal",
-                        arguments: Target(TargetType.mock,
-                            path: controller
-                                .previousFile.value)); // TODO: redesign this
+    return makePage(
+        "Setup Mock Device",
+        Container(
+            alignment: AlignmentDirectional.center,
+            child: Column(children: [
+              const SizedBox(
+                height: 10,
+              ),
+              Obx(() => controller.previousFile.value == ""
+                  ? Container()
+                  : FilledButton(
+                      child: const Text("Load Previous"),
+                      onPressed: () {
+                        controller.bufferController.reset();
+                        Get.put(MockController(controller.previousFile.value,
+                            controller.bufferController));
+                        Get.toNamed("/signal",
+                            arguments: Target(TargetType.mock,
+                                path: controller.previousFile
+                                    .value)); // TODO: redesign this
+                      },
+                    )),
+              const SizedBox(
+                height: 10,
+              ),
+              FilledButton(
+                  onPressed: () async {
+                    try {
+                      final String? path = (await FilePicker.platform.pickFiles(
+                              allowMultiple: false,
+                              type: FileType.custom,
+                              allowedExtensions: ["csv"],
+                              dialogTitle: "Select mock file"))
+                          ?.files[0]
+                          .path;
+                      if (path != null) {
+                        controller.save(path);
+                        controller.bufferController.reset();
+                        Get.put(
+                            MockController(path, controller.bufferController));
+                        Get.toNamed("/signal",
+                            arguments: Target(TargetType.mock, path: path));
+                      } else {
+                        Get.snackbar("Cancelled", "No file was selected.");
+                      }
+                    } on PlatformException catch (e) {
+                      Get.snackbar("Error", "Failed to open file dialog: $e");
+                    }
                   },
-                )),
-          const SizedBox(
-            height: 10,
-          ),
-          FilledButton(
-              onPressed: () async {
-                try {
-                  final String? path = (await FilePicker.platform.pickFiles(
-                          allowMultiple: false,
-                          type: FileType.custom,
-                          allowedExtensions: ["csv"],
-                          dialogTitle: "Select mock file"))
-                      ?.files[0]
-                      .path;
-                  if (path != null) {
-                    controller.save(path);
-                    controller.bufferController.reset();
-                    Get.put(MockController(path, controller.bufferController));
-                    Get.toNamed("/signal",
-                        arguments: Target(TargetType.mock, path: path));
-                  } else {
-                    Get.snackbar("Cancelled", "No file was selected.");
-                  }
-                } on PlatformException catch (e) {
-                  Get.snackbar("Error", "Failed to open file dialog: $e");
-                }
-              },
-              child: const Text("Open File"))
-        ]));
+                  child: const Text("Open File"))
+            ])));
   }
 }

@@ -1,12 +1,14 @@
 import 'package:bluetooth_low_energy/bluetooth_low_energy.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:watchtower/buffer_controller.dart';
-import 'package:watchtower/graph.dart';
-import 'package:watchtower/mock_device.dart';
-import 'package:watchtower/signal_controller.dart';
-import 'package:watchtower/target_page.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+
+import 'main.dart';
+import 'buffer_controller.dart';
+import 'graph.dart';
+import 'mock_device.dart';
+import 'signal_controller.dart';
+import 'target_page.dart';
 
 class SignalPage extends StatelessWidget {
   final Target target = Get.arguments;
@@ -39,29 +41,9 @@ class SignalPage extends StatelessWidget {
             Get.delete<MockController>();
           }
         },
-        child: Scaffold(
-          appBar: AppBar(title: const Text("View Signal"), actions: [
-            if (!target.isMock)
-              Obx(() => signalController!.connectionState.value
-                  ? IconButton(
-                      icon: const Icon(Icons.bluetooth_connected),
-                      iconSize: 24,
-                      color: Colors.greenAccent,
-                      onPressed: () {
-                        signalController!.disconnect();
-                      },
-                    )
-                  : IconButton(
-                      icon: const Icon(Icons.refresh),
-                      iconSize: 24,
-                      color: Colors.yellowAccent,
-                      onPressed: () {
-                        signalController!.connect();
-                      },
-                    ))
-          ]),
-          body: SafeArea(
-            child: Column(
+        child: makePage(
+            "View Signal",
+            Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Obx(() => bufferController.percentage.value != 1.0
@@ -80,33 +62,54 @@ class SignalPage extends StatelessWidget {
                 // PipelineGraph(pipelines, detectors)
               ],
             ),
-          ),
-          floatingActionButton: Obx(() => FloatingActionButton(
-                onPressed: switch (bufferController.state()) {
-                  BufferControllerState.normal => bufferController.startRecord,
-                  BufferControllerState.recording =>
-                    bufferController.stopRecord,
-                  BufferControllerState.saving => null,
-                },
-                tooltip: switch (bufferController.state()) {
-                  BufferControllerState.normal => "Start Recording",
-                  BufferControllerState.recording => "Stop Recording",
-                  BufferControllerState.saving => "Saving",
-                },
-                backgroundColor:
-                    bufferController.state() == BufferControllerState.recording
-                        ? Colors.red
-                        : Colors.white,
-                child: switch (bufferController.state()) {
-                  BufferControllerState.normal => const Icon(Icons.video_file),
-                  BufferControllerState.recording => const Icon(
-                      Icons.stop_circle,
-                    ),
-                  BufferControllerState.saving =>
-                    const SpinKitRing(color: Colors.black)
-                },
-              )),
-        ));
+            showDrawerButton: false,
+            actions: [
+              if (!target.isMock)
+                Obx(() => signalController!.connectionState.value
+                    ? IconButton(
+                        icon: const Icon(Icons.bluetooth_connected),
+                        iconSize: 24,
+                        color: Colors.greenAccent,
+                        onPressed: () {
+                          signalController!.disconnect();
+                        },
+                      )
+                    : IconButton(
+                        icon: const Icon(Icons.refresh),
+                        iconSize: 24,
+                        color: Colors.yellowAccent,
+                        onPressed: () {
+                          signalController!.connect();
+                        },
+                      ))
+            ],
+            floatingActionButton: Obx(() => FloatingActionButton(
+                  onPressed: switch (bufferController.state()) {
+                    BufferControllerState.normal =>
+                      bufferController.startRecord,
+                    BufferControllerState.recording =>
+                      bufferController.stopRecord,
+                    BufferControllerState.saving => null,
+                  },
+                  tooltip: switch (bufferController.state()) {
+                    BufferControllerState.normal => "Start Recording",
+                    BufferControllerState.recording => "Stop Recording",
+                    BufferControllerState.saving => "Saving",
+                  },
+                  backgroundColor: bufferController.state() ==
+                          BufferControllerState.recording
+                      ? Colors.red
+                      : Colors.white,
+                  child: switch (bufferController.state()) {
+                    BufferControllerState.normal =>
+                      const Icon(Icons.video_file),
+                    BufferControllerState.recording => const Icon(
+                        Icons.stop_circle,
+                      ),
+                    BufferControllerState.saving =>
+                      const SpinKitRing(color: Colors.black)
+                  },
+                ))));
   }
 }
 

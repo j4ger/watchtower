@@ -8,38 +8,52 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'algorithm/ECG/clean.dart';
 import 'algorithm/ECG/find_peaks.dart';
+import 'bluetooth_page.dart';
 import 'buffer_controller.dart';
 import 'record_page.dart';
 
 Future main() async {
-  Get.put(BufferController(pipelines: pipelines, detector: detector));
-  Get.put(RecordController());
+  Get.lazyPut(() => BufferController(pipelines: pipelines, detector: detector));
+  Get.lazyPut(() => RecordController());
   if (Platform.isWindows || Platform.isLinux) {
     sqfliteFfiInit();
   }
   databaseFactory = databaseFactoryFfi; // TODO: test this on mobile platforms
-  runApp(const MyApp());
+  runApp(const App());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class App extends StatelessWidget {
+  const App({super.key});
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
     return GetMaterialApp(
-      title: 'Watchtower',
-      themeMode: ThemeMode.system,
-      initialRoute: '/target',
-      getPages: [
-        GetPage(name: "/target", page: () => const TargetPage()),
-        GetPage(
-          name: "/signal",
-          page: () => SignalPage(),
-        ),
-        GetPage(name: "/record", page: () => RecordPage())
-      ],
-    );
+        title: 'Watchtower',
+        themeMode: ThemeMode.system,
+        navigatorKey: Get.key,
+        initialRoute: '/bluetooth',
+        builder: (context, child) => Scaffold(
+              key: scaffoldKey,
+              drawer: NavigationDrawer(
+                onDestinationSelected: (index) {
+                  Get.toNamed("/${navigationList[index].name}");
+                },
+                children: [
+                  // TODO: header pic
+                  ...navigationList.map((entry) => NavigationDrawerDestination(
+                      label: Text(entry.title),
+                      icon: Icon(entry.icon),
+                      selectedIcon: Icon(entry.selectedIcon)))
+                ],
+              ),
+              body: child,
+            ),
+        getPages: navigationList
+            .map((entry) => GetPage(
+                name: "/${entry.name}", page: entry.page, title: entry.title))
+            .toList());
   }
 }
 
@@ -51,3 +65,78 @@ const fs =
     333; // for csv data exported from https://archive.physionet.org/cgi-bin/atm/ATM
 final pipelines = [CleanPT(fs)];
 final detector = PtPeakDetector(fs);
+
+// TODO: move bluetoothpage and mockpage into separate pages
+// TODO: hide signalpage
+final List<AppPage> navigationList = [
+  AppPage("bluetooth", "Setup Bluetooth Device", () => BluetoothPage(),
+      Icons.devices_other, Icons.devices_other_outlined),
+  AppPage("mock", "Setup Mock Device", () => MockPage(), Icons.file_open,
+      Icons.file_open_outlined),
+  AppPage("signal", "View Signal", () => SignalPage(), Icons.timeline,
+      Icons.timeline_outlined),
+  AppPage("record", "Record Management", () => RecordPage(), Icons.save,
+      Icons.save_rounded)
+];
+
+class AppPage {
+  final String name;
+  final String title;
+  final Widget Function() page;
+  final IconData icon;
+  final IconData selectedIcon;
+  AppPage(this.name, this.title, this.page, this.icon, this.selectedIcon);
+}
+
+// TODO: extract components into their own files
+// TODO: AppBarWrapper that has a fixed button for opening drawer
+
+class DefaultAppBar extends StatelessWidget implements PreferredSizeWidget {
+  final String title;
+  final bool showDrawerButton;
+  final List<Widget> actions;
+  const DefaultAppBar(this.title,
+      {this.showDrawerButton = true, this.actions = const [], super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final ScaffoldState? scaffoldState =
+        context.findRootAncestorStateOfType<ScaffoldState>();
+    return AppBar(
+      leading: showDrawerButton
+          ? IconButton(
+              icon: Icon(scaffoldState?.isDrawerOpen ?? false
+                  ? Icons.menu_open
+                  : Icons.menu),
+              onPressed: scaffoldState?.isDrawerOpen ?? false
+                  ? scaffoldState?.closeDrawer
+                  : scaffoldState?.openDrawer,
+            )
+          : null,
+      title: Text(title),
+      actions: actions,
+    );
+  }
+
+  @override
+  final Size preferredSize = const Size.fromHeight(kToolbarHeight);
+}
+
+Widget makePage(String title, Widget body,
+        {bool showDrawerButton = true,
+        List<Widget> actions = const [],
+        Widget? floatingActionButton}) =>
+    Scaffold(
+      appBar: DefaultAppBar(title,
+          showDrawerButton: showDrawerButton, actions: actions),
+      body: SafeArea(child: body),
+      floatingActionButton: floatingActionButton,
+    );
+
+class RootScaffold {
+  static openDrawer(BuildContext context) {
+    final ScaffoldState? scaffoldState =
+        context.findRootAncestorStateOfType<ScaffoldState>();
+    scaffoldState?.openDrawer();
+  }
+}
