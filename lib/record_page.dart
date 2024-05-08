@@ -88,12 +88,11 @@ class RecordController extends GetxController {
   }
 
   Future<void> addRecord(Record record) async {
-    final res = await db.insert(
+    await db.insert(
       tableName,
       record.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    print(res);
     updateRecordList();
   }
 
