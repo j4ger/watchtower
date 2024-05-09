@@ -6,8 +6,9 @@ import 'package:watchtower/algorithm/ECG/find_peaks.dart';
 import 'package:watchtower/buffer_controller.dart';
 import 'package:community_charts_flutter/community_charts_flutter.dart'
     as charts;
-import 'package:watchtower/ecg_data.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+
+import 'ecg_data.dart';
 
 const graphUpperLimit = 2;
 const graphLowerLimit = -2;
@@ -17,13 +18,13 @@ class Graph extends StatelessWidget {
   Graph({super.key});
 
   @override
-  Widget build(BuildContext context) => ListView(children: [
-        SizedBox(
-            height: 300,
+  Widget build(BuildContext context) =>
+      ListView(padding: const EdgeInsets.symmetric(horizontal: 10), children: [
+        Card(
+            clipBehavior: Clip.hardEdge,
             child: Stack(children: [
-              Container(
+              SizedBox(
                   height: 300,
-                  padding: const EdgeInsets.all(10),
                   child: GetBuilder<BufferController>(builder: (controller) {
                     final buffer = controller.buffer;
 
@@ -176,38 +177,52 @@ class Graph extends StatelessWidget {
                     ],
                   ))
             ])),
-        Container(
-            padding: const EdgeInsets.fromLTRB(30, 40, 30, 0),
-            height: 300,
-            child: Obx(() {
-              final intervalHistoryData = [
-                charts.Series<(int, int), int>(
-                    id: "interval",
-                    domainFn: (data, _) => data.$1,
-                    measureFn: (data, _) => data.$2,
-                    data: controller.intervalHistory())
-              ];
-              return charts.LineChart(
-                intervalHistoryData,
-                animate: false, //TODO: animate
-                defaultRenderer: charts.LineRendererConfig(includePoints: true),
-                domainAxis: const charts.NumericAxisSpec(
-                    viewport: charts.NumericExtents(0, peakBufferCapacity - 2),
-                    renderSpec: charts.NoneRenderSpec()),
-                primaryMeasureAxis: const charts.NumericAxisSpec(
-                    viewport: charts.NumericExtents(250, 1200)),
-                behaviors: [
-                  if (controller.heartRate.value != null)
-                    charts.RangeAnnotation([
-                      charts.LineAnnotationSegment(
-                          60 * 1000 / controller.heartRate.value!,
-                          charts.RangeAnnotationAxisType.measure,
-                          endLabel: "Average",
-                          color: averageLineColor)
-                    ])
-                ],
-              );
-            })),
+        Card(
+            child: Column(children: [
+          const SizedBox(
+            height: 10,
+          ),
+          Text("Interval History",
+              style: Theme.of(context).textTheme.titleMedium),
+          SizedBox(
+              height: 300,
+              child: Obx(() {
+                final intervalHistoryData = [
+                  charts.Series<(int, int), int>(
+                      id: "interval",
+                      domainFn: (data, _) => data.$1,
+                      measureFn: (data, _) => data.$2,
+                      data: controller.intervalHistory())
+                ];
+                return charts.LineChart(
+                  intervalHistoryData,
+                  animate: false, //TODO: animate
+                  defaultRenderer:
+                      charts.LineRendererConfig(includePoints: true),
+                  domainAxis: const charts.NumericAxisSpec(
+                      viewport:
+                          charts.NumericExtents(0, peakBufferCapacity - 2),
+                      renderSpec: charts.NoneRenderSpec()),
+                  primaryMeasureAxis: const charts.NumericAxisSpec(
+                      viewport: charts.NumericExtents(250, 1200)),
+                  behaviors: [
+                    if (controller.heartRate.value != null)
+                      charts.RangeAnnotation([
+                        charts.LineAnnotationSegment(
+                            60 * 1000 / controller.heartRate.value!,
+                            charts.RangeAnnotationAxisType.measure,
+                            endLabel: "Average",
+                            color: averageLineColor)
+                      ])
+                  ],
+                  layoutConfig: charts.LayoutConfig(
+                      leftMarginSpec: charts.MarginSpec.fixedPixel(45),
+                      rightMarginSpec: charts.MarginSpec.fixedPixel(30),
+                      topMarginSpec: charts.MarginSpec.fixedPixel(15),
+                      bottomMarginSpec: charts.MarginSpec.fixedPixel(10)),
+                );
+              }))
+        ])),
         ListTile(
           leading: const Icon(Icons.bug_report),
           title: const Text("Debug"),
