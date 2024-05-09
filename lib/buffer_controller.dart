@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:collection/collection.dart';
 import 'package:flutter/animation.dart';
 import 'package:flutter/material.dart';
@@ -174,10 +176,14 @@ class BufferController extends GetxController
 
   final state = BufferControllerState.normal.obs;
   DateTime? recordStartTime;
+  final recordDuration = 0.obs;
+  Timer? recordDurationTimer;
   final List<ECGData> recordBuffer = [];
 
   void startRecord() {
     recordStartTime = DateTime.now();
+    recordDurationTimer = Timer.periodic(
+        const Duration(seconds: 1), (_) => recordDuration.value++);
     state.value = BufferControllerState.recording;
   }
 
@@ -193,6 +199,8 @@ class BufferController extends GetxController
     state.value = BufferControllerState.normal;
     snackbar("Info", "Record successfully saved.");
     recordBuffer.clear();
+    recordDurationTimer!.cancel();
+    recordDurationTimer = null; // TODO: is this necessary?
   }
 }
 

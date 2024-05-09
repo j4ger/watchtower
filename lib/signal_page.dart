@@ -83,33 +83,29 @@ class SignalPage extends StatelessWidget {
                         },
                       ))
             ],
-            floatingActionButton: Obx(() => FloatingActionButton(
-                  onPressed: switch (bufferController.state()) {
-                    BufferControllerState.normal =>
-                      bufferController.startRecord,
-                    BufferControllerState.recording =>
-                      bufferController.stopRecord,
-                    BufferControllerState.saving => null,
-                  },
-                  tooltip: switch (bufferController.state()) {
-                    BufferControllerState.normal => "Start Recording",
-                    BufferControllerState.recording => "Stop Recording",
-                    BufferControllerState.saving => "Saving",
-                  },
-                  backgroundColor: bufferController.state() ==
-                          BufferControllerState.recording
-                      ? Colors.red
-                      : Colors.white,
-                  child: switch (bufferController.state()) {
-                    BufferControllerState.normal =>
-                      const Icon(Icons.video_file),
-                    BufferControllerState.recording => const Icon(
-                        Icons.stop_circle,
-                      ),
-                    BufferControllerState.saving =>
-                      const SpinKitRing(color: Colors.black)
-                  },
-                ))));
+            floatingActionButton: Obx(() => switch (bufferController.state()) {
+                  BufferControllerState.normal => FloatingActionButton(
+                      onPressed: bufferController.startRecord,
+                      tooltip: "Start Recording",
+                      child: const Icon(Icons.video_file)),
+                  BufferControllerState.recording =>
+                    FloatingActionButton.extended(
+                        onPressed: bufferController.stopRecord,
+                        tooltip: "Stop Recording",
+                        backgroundColor: Colors.red,
+                        icon: const Icon(Icons.stop_circle),
+                        label: Obx(() {
+                          final minute =
+                              bufferController.recordDuration() ~/ 60;
+                          final second = bufferController.recordDuration() % 60;
+                          return Text(
+                              "${minute.toString().padLeft(2, '0')}:${second.toString().padLeft(2, '0')}");
+                        })),
+                  BufferControllerState.saving => const FloatingActionButton(
+                      onPressed: null,
+                      tooltip: "Saving",
+                      child: SpinKitRing(color: Colors.grey))
+                })));
   }
 }
 
