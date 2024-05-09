@@ -70,8 +70,11 @@ class ViewRecordPage extends StatelessWidget {
                     domainAxis: charts.NumericAxisSpec(
                         viewport: const charts.NumericExtents(
                             0, displayTimestampRange),
-                        tickFormatterSpec: charts.BasicNumericTickFormatterSpec(
-                            (input) => "${input ?? 0 / fs}ms")),
+                        tickFormatterSpec:
+                            charts.BasicNumericTickFormatterSpec((input) {
+                          final number = (input ?? 0) / fs;
+                          return "${number.toStringAsFixed(2)}s";
+                        })),
                     primaryMeasureAxis: const charts.NumericAxisSpec(
                         renderSpec: charts.NoneRenderSpec(),
                         viewport: charts.NumericExtents(
