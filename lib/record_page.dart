@@ -8,9 +8,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:community_charts_flutter/community_charts_flutter.dart'
+    as charts;
 
 import 'algorithm/ECG/clean.dart';
 import 'algorithm/ECG/find_peaks.dart';
+import 'algorithm/utils.dart';
 import 'ecg_data.dart';
 import 'main.dart';
 
@@ -108,16 +111,19 @@ class RecordController extends GetxController {
       final List<Map<String, Object?>> recordMaps = await db.query(tableName,
           columns: [
             "start",
-            "duration"
+            "duration",
+            "annotations"
           ]); // don't query data now to avoid long load time
 
       final result = [
         for (final {
               'start': startTime as int,
               'duration': duration as int,
+              'annotations': annotations as Uint8List
             } in recordMaps)
           Record(DateTime.fromMillisecondsSinceEpoch(startTime),
-              Duration(milliseconds: duration), []),
+              Duration(milliseconds: duration), [],
+              annotations: deserializeInt32ToList(annotations)),
       ];
 
       records.value = result;
@@ -211,8 +217,43 @@ class RecordPage extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      trailing: Text(
-                          "placeholder"), // TODO: thumbnail for a segment of heartrate graph
+                      trailing: record.annotations.isNotEmpty
+                          ? Container(
+                              height: 30,
+                              width: 200,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.black54),
+                              ),
+                              padding: EdgeInsets.zero,
+                              child: charts.LineChart(
+                                [
+                                  charts.Series(
+                                      id: "gap",
+                                      data: intListDiff(record.annotations),
+                                      domainFn: (value, index) => index ?? 0,
+                                      measureFn: (value, index) => value)
+                                ],
+                                animate: false,
+                                domainAxis: const charts.NumericAxisSpec(
+                                    renderSpec: charts.NoneRenderSpec()),
+                                primaryMeasureAxis:
+                                    const charts.NumericAxisSpec(
+                                        renderSpec: charts.NoneRenderSpec(),
+                                        viewport: charts.NumericExtents(
+                                            thumbnailLowerLimit,
+                                            thumbnailUpperLimit)),
+                                layoutConfig: charts.LayoutConfig(
+                                    leftMarginSpec:
+                                        charts.MarginSpec.fixedPixel(5),
+                                    rightMarginSpec:
+                                        charts.MarginSpec.fixedPixel(5),
+                                    topMarginSpec:
+                                        charts.MarginSpec.fixedPixel(2),
+                                    bottomMarginSpec:
+                                        charts.MarginSpec.fixedPixel(2)),
+                              ),
+                            )
+                          : null, // TODO: thumbnail for a segment of heartrate graph
                       onTap: () {
                         Get.toNamed("/viewRecord", arguments: record.startTime);
                       },
@@ -294,3 +335,6 @@ List<int> processWithPT(List<ECGData> input) {
   final result = detector.detect(preprocessed);
   return result;
 }
+
+const int thumbnailUpperLimit = 400;
+const int thumbnailLowerLimit = 200;

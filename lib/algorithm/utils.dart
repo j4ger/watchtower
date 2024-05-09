@@ -1,8 +1,5 @@
 import '../ecg_data.dart';
 
-// TODO: something here is causing a stable offset after applying
-// fix it
-
 List<ECGData> movingWindowAverage(List<ECGData> input, int windowSize,
     {int compensationLength = 0}) {
   // Pad both ends of the averages list to match the input length
@@ -55,6 +52,14 @@ List<ECGData> arrayDiff(List<ECGData> input) {
   differences.add(
       ECGData(input.last.timestamp + 1, differences.last.value)); // pad the end
 
+  return differences;
+}
+
+List<int> intListDiff(List<int> input) {
+  List<int> differences = [];
+  for (int i = 0; i < input.length - 1; i++) {
+    differences.add(input[i + 1] - input[i]);
+  }
   return differences;
 }
 
