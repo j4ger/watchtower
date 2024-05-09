@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:bluetooth_low_energy/bluetooth_low_energy.dart';
+import 'package:collection/collection.dart';
+import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,8 +10,10 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'buffer_controller.dart';
+import 'ecg_data.dart';
 import 'mock_device.dart';
 import 'main.dart';
+import 'record_page.dart';
 
 const previousFileKey = "PreviousFile";
 
@@ -50,6 +56,7 @@ class MockPage extends StatelessWidget {
   MockPage({super.key});
 
   final controller = Get.put(MockPageController());
+  final RecordController recordController = Get.find();
 
   @override
   Widget build(BuildContext context) {
@@ -79,30 +86,67 @@ class MockPage extends StatelessWidget {
                 height: 10,
               ),
               FilledButton(
-                  onPressed: () async {
-                    try {
-                      final String? path = (await FilePicker.platform.pickFiles(
-                              allowMultiple: false,
-                              type: FileType.custom,
-                              allowedExtensions: ["csv"],
-                              dialogTitle: "Select mock file"))
-                          ?.files[0]
-                          .path;
-                      if (path != null) {
-                        controller.save(path);
-                        controller.bufferController.reset();
-                        Get.put(
-                            MockController(path, controller.bufferController));
-                        Get.toNamed("/signal",
-                            arguments: Target(TargetType.mock, path: path));
-                      } else {
-                        snackbar("Cancelled", "No file was selected.");
-                      }
-                    } on PlatformException catch (e) {
-                      snackbar("Error", "Failed to open file dialog: $e");
-                    }
-                  },
-                  child: const Text("Open File"))
+                  onPressed: () async => awaitWithOverlay(() async {
+                        try {
+                          final String? path = (await FilePicker.platform
+                                  .pickFiles(
+                                      allowMultiple: false,
+                                      type: FileType.custom,
+                                      allowedExtensions: ["csv"],
+                                      dialogTitle: "Select mock file"))
+                              ?.files[0]
+                              .path;
+                          if (path != null) {
+                            controller.save(path);
+                            controller.bufferController.reset();
+                            Get.put(MockController(
+                                path, controller.bufferController));
+                            Get.toNamed("/signal",
+                                arguments: Target(TargetType.mock, path: path));
+                          } else {
+                            snackbar("Cancelled", "No file was selected.");
+                          }
+                        } on PlatformException catch (e) {
+                          snackbar("Error", "Failed to open file dialog: $e");
+                        }
+                      }),
+                  child: const Text("Open File")),
+              const SizedBox(
+                height: 10,
+              ),
+              FilledButton(
+                  onPressed: () async => awaitWithOverlay(() async {
+                        final String? path = (await FilePicker.platform
+                                .pickFiles(
+                                    allowMultiple: false,
+                                    type: FileType.custom,
+                                    allowedExtensions: ["csv"],
+                                    dialogTitle: "Select mock file"))
+                            ?.files[0]
+                            .path;
+                        if (path != null) {
+                          final file = File(path);
+                          final content = file
+                              .readAsStringSync(); // TODO: might block for a while, use async and loading indicator to improve experience
+                          final csv = const CsvToListConverter(eol: "\n")
+                              .convert(content);
+
+                          final data = csv
+                              .sublist(2)
+                              .mapIndexed((index, element) =>
+                                  ECGData(index, element[1] as double))
+                              .toList();
+
+                          final detectResult = processWithPT(data);
+                          final record = Record(
+                              DateTime.now(),
+                              Duration(milliseconds: data.length * 1000 ~/ fs),
+                              data,
+                              annotations: detectResult);
+                          await recordController.addRecord(record);
+                        }
+                      }),
+                  child: const Text("Load file to database"))
             ])));
   }
 }

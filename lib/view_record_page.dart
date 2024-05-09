@@ -79,7 +79,21 @@ class ViewRecordPage extends StatelessWidget {
                         renderSpec: charts.NoneRenderSpec(),
                         viewport: charts.NumericExtents(
                             graphLowerLimit, graphUpperLimit)),
-                    behaviors: [charts.PanAndZoomBehavior()],
+                    behaviors: [
+                      charts.PanAndZoomBehavior(),
+                      if (controller.record.annotations.isNotEmpty)
+                        charts.RangeAnnotation(controller.record.annotations
+                            .map((timestamp) => charts.RangeAnnotationSegment(
+                                timestamp -
+                                    controller.timestampStart -
+                                    markLength,
+                                timestamp -
+                                    controller.timestampStart +
+                                    markLength,
+                                charts.RangeAnnotationAxisType.domain,
+                                color: markColor))
+                            .toList()),
+                    ],
                   ))),
         ),
         showDrawerButton: false);

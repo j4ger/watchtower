@@ -9,6 +9,8 @@ import 'package:intl/intl.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:path_provider/path_provider.dart';
 
+import 'algorithm/ECG/clean.dart';
+import 'algorithm/ECG/find_peaks.dart';
 import 'ecg_data.dart';
 import 'main.dart';
 
@@ -21,20 +23,23 @@ class Record {
   final DateTime startTime;
   final Duration duration;
   final List<ECGData> data;
+  final List<int> annotations;
 
-  Record(this.startTime, this.duration, this.data);
+  Record(this.startTime, this.duration, this.data,
+      {this.annotations = const []});
 
   Map<String, Object?> toMap() {
     return {
       'start': startTime.millisecondsSinceEpoch,
       'duration': duration.inMilliseconds,
       'data': ECGData.serialize(data),
+      'annotations': serializeListToInt32(annotations),
     };
   }
 
   @override
   String toString() =>
-      "record from $startTime for $duration with ${data.length} samples";
+      "record from $startTime for $duration with ${data.length} samples, ${annotations.length} annotations";
 }
 
 class RecordController extends GetxController {
@@ -58,15 +63,15 @@ class RecordController extends GetxController {
 
   void onStartUp() async {
     WidgetsFlutterBinding.ensureInitialized();
-    final docsDirectory = await getApplicationDocumentsDirectory();
+    final docsDirectory = await getApplicationSupportDirectory();
     db = await openDatabase(
       join(docsDirectory.path, dbName),
       onCreate: (db, version) {
         return db.execute(
-          'CREATE TABLE $tableName(id INTEGER PRIMARY KEY, start INTEGER, duration INTEGER, data BLOB)',
+          'CREATE TABLE $tableName(id INTEGER PRIMARY KEY, start INTEGER, duration INTEGER, data BLOB, annotations BLOB)',
         );
       },
-      version: 2,
+      version: 3,
     );
     updateRecordList();
   }
@@ -136,10 +141,12 @@ class RecordController extends GetxController {
     final {
       'start': startTime as int,
       'duration': duration as int,
-      'data': data as Uint8List
+      'data': data as Uint8List,
+      'annotations': annotations as Uint8List,
     } = resultMap.first;
     return Record(DateTime.fromMillisecondsSinceEpoch(startTime),
-        Duration(milliseconds: duration), ECGData.deserialize(data));
+        Duration(milliseconds: duration), ECGData.deserialize(data),
+        annotations: deserializeInt32ToList(annotations));
   }
 }
 
@@ -204,6 +211,8 @@ class RecordPage extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      trailing: Text(
+                          "placeholder"), // TODO: thumbnail for a segment of heartrate graph
                       onTap: () {
                         Get.toNamed("/viewRecord", arguments: record.startTime);
                       },
@@ -252,4 +261,36 @@ String formatDuration(Duration input) {
   return tokens.join(':');
 }
 
-// TODO: delete record
+Uint8List serializeListToInt32(List<int> intList) {
+  final uint8List = Uint8List(intList.length * 4);
+  for (int i = 0; i < intList.length; i++) {
+    final value = intList[i];
+    uint8List[i * 4 + 0] = (value >> 24) & 0xFF;
+    uint8List[i * 4 + 1] = (value >> 16) & 0xFF;
+    uint8List[i * 4 + 2] = (value >> 8) & 0xFF;
+    uint8List[i * 4 + 3] = value & 0xFF;
+  }
+  return uint8List;
+}
+
+List<int> deserializeInt32ToList(Uint8List uint8List) {
+  final int length = uint8List.length ~/ 4;
+  final List<int> intList = [];
+  for (int i = 0; i < length; i++) {
+    int value = 0;
+    value += (uint8List[i * 4 + 0] << 24);
+    value += (uint8List[i * 4 + 1] << 16);
+    value += (uint8List[i * 4 + 2] << 8);
+    value += (uint8List[i * 4 + 3]);
+    intList.add(value);
+  }
+  return intList;
+}
+
+List<int> processWithPT(List<ECGData> input) {
+  final preprocessor = CleanPT(fs);
+  final detector = PtPeakDetector(fs);
+  final preprocessed = preprocessor.apply(input);
+  final result = detector.detect(preprocessed);
+  return result;
+}

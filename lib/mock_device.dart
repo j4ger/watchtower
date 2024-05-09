@@ -29,7 +29,8 @@ class MockController extends GetxController {
     super.onInit();
 
     final file = File(path);
-    final content = file.readAsStringSync();
+    final content = file
+        .readAsStringSync(); // TODO: might block for a while, use async and loading indicator to improve experience
     final csv = const CsvToListConverter(eol: "\n").convert(content);
 
     data = csv.sublist(2).map((element) => element[1] as double).toList();
