@@ -20,6 +20,7 @@ class SignalPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final bufferController = Get.find<BufferController>();
     if (target.isMock) {
       mockController = Get.find<MockController>();
@@ -83,29 +84,49 @@ class SignalPage extends StatelessWidget {
                         },
                       ))
             ],
-            floatingActionButton: Obx(() => switch (bufferController.state()) {
-                  BufferControllerState.normal => FloatingActionButton(
-                      onPressed: bufferController.startRecord,
-                      tooltip: "Start Recording",
-                      child: const Icon(Icons.video_file)),
-                  BufferControllerState.recording =>
-                    FloatingActionButton.extended(
-                        onPressed: bufferController.stopRecord,
-                        tooltip: "Stop Recording",
-                        backgroundColor: Colors.red,
-                        icon: const Icon(Icons.stop_circle),
-                        label: Obx(() {
-                          final minute =
-                              bufferController.recordDuration() ~/ 60;
-                          final second = bufferController.recordDuration() % 60;
-                          return Text(
-                              "${minute.toString().padLeft(2, '0')}:${second.toString().padLeft(2, '0')}");
-                        })),
-                  BufferControllerState.saving => const FloatingActionButton(
-                      onPressed: null,
-                      tooltip: "Saving",
-                      child: SpinKitRing(color: Colors.grey))
-                })));
+            floatingActionButton: Obx(() => FloatingActionButton.extended(
+                  onPressed: switch (bufferController.state()) {
+                    BufferControllerState.normal =>
+                      bufferController.startRecord,
+                    BufferControllerState.recording =>
+                      bufferController.stopRecord,
+                    BufferControllerState.saving => null
+                  },
+                  label: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      transitionBuilder:
+                          (Widget child, Animation<double> animation) =>
+                              FadeTransition(
+                                  opacity: animation,
+                                  child: SizeTransition(
+                                    sizeFactor: animation,
+                                    axis: Axis.horizontal,
+                                    child: child,
+                                  )),
+                      child: switch (bufferController.state()) {
+                        BufferControllerState.normal => const Icon(
+                            Icons.video_file,
+                            key: ValueKey(BufferControllerState.normal)),
+                        BufferControllerState.recording => Row(
+                              key: const ValueKey(
+                                  BufferControllerState.recording),
+                              children: [
+                                const Icon(Icons.stop_circle),
+                                const SizedBox(width: 10),
+                                Text(
+                                  "${(bufferController.recordDuration() ~/ 60).toString().padLeft(2, '0')}:${(bufferController.recordDuration() % 60).toString().padLeft(2, '0')}",
+                                  style: theme.textTheme.labelLarge,
+                                )
+                              ]),
+                        BufferControllerState.saving => const SpinKitRing(
+                            key: ValueKey(BufferControllerState.saving),
+                            color: Colors.grey)
+                      }),
+                  backgroundColor: bufferController.state() ==
+                          BufferControllerState.recording
+                      ? Colors.redAccent
+                      : null,
+                ))));
   }
 }
 
