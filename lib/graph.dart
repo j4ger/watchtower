@@ -9,8 +9,8 @@ import 'package:community_charts_flutter/community_charts_flutter.dart'
 import 'package:watchtower/ecg_data.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 
-const GRAPH_UPPER_LIMIT = 2;
-const GRAPH_LOWER_LIMIT = -2;
+const graphUpperLimit = 2;
+const graphLowerLimit = -2;
 
 class Graph extends StatelessWidget {
   final BufferController controller = Get.find();
@@ -138,7 +138,7 @@ class Graph extends StatelessWidget {
                       primaryMeasureAxis: const charts.NumericAxisSpec(
                           renderSpec: charts.NoneRenderSpec(),
                           viewport: charts.NumericExtents(
-                              GRAPH_LOWER_LIMIT, GRAPH_UPPER_LIMIT)),
+                              graphLowerLimit, graphUpperLimit)),
                       behaviors: [charts.RangeAnnotation(rangeAnnotations)],
                     );
                   })),

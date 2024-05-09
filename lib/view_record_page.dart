@@ -78,7 +78,7 @@ class ViewRecordPage extends StatelessWidget {
                     primaryMeasureAxis: const charts.NumericAxisSpec(
                         renderSpec: charts.NoneRenderSpec(),
                         viewport: charts.NumericExtents(
-                            GRAPH_LOWER_LIMIT, GRAPH_UPPER_LIMIT)),
+                            graphLowerLimit, graphUpperLimit)),
                     behaviors: [charts.PanAndZoomBehavior()],
                   ))),
         ),
