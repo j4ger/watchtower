@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +15,7 @@ import 'main.dart';
 
 class ViewRecordController extends GetxController {
   late final Record record;
+  final Rx<List<int>?> correctAnnotations = null.obs;
   final DateTime startTime;
   final loading = true.obs;
 
@@ -31,6 +35,46 @@ class ViewRecordController extends GetxController {
     final result = await recordController.getRecordByStartTime(startTime);
     record = result;
     loading.value = false;
+  }
+
+  Future<void> promptLoadCorrectAnnotations() async {
+    try {
+      final String? path = (await FilePicker.platform.pickFiles(
+              allowMultiple: false,
+              type: FileType.custom,
+              allowedExtensions: ["txt"],
+              dialogTitle: "Select annotation file"))
+          ?.files[0]
+          .path;
+      if (path != null) {
+        final file = File(path);
+        final content = await file.readAsString();
+        final result = <int>[];
+        List<String> lines = content.trim().split("\n");
+
+        // Assuming the header is always present and the format is consistent
+        List<String> headers = lines.first
+            .split(RegExp(r'\s+'))
+            .map((header) => header.trim())
+            .toList();
+        int sampleIndex = headers.indexOf("Sample");
+
+        for (String line in lines.skip(1)) {
+          List<String> values =
+              line.split(RegExp(r'\s+')).map((value) => value.trim()).toList();
+          if (values.length > sampleIndex) {
+            String sampleValue = values[sampleIndex];
+            result.add(int.parse(sampleValue));
+          }
+        }
+
+        correctAnnotations.value = result;
+      } else {
+        snackbar("Cancelled", "No file was selected.");
+      }
+    } on PlatformException catch (e) {
+      snackbar("Error", "Failed to open file dialog: $e");
+    }
   }
 
   int get timestampStart => record.data.first.timestamp;
@@ -93,8 +137,22 @@ class ViewRecordPage extends StatelessWidget {
                                 charts.RangeAnnotationAxisType.domain,
                                 color: markColor))
                             .toList()),
+                      if (controller.correctAnnotations.value != null)
+                        charts.RangeAnnotation(controller
+                            .correctAnnotations.value!
+                            .map((timestamp) => charts.RangeAnnotationSegment(
+                                timestamp - 1,
+                                timestamp + 1,
+                                charts.RangeAnnotationAxisType.domain,
+                                color: const charts.Color(r: 10, g: 10, b: 10)))
+                            .toList())
                     ],
                   ))),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: controller.promptLoadCorrectAnnotations,
+          tooltip: "Load Correct Annotations",
+          child: const Icon(Icons.assignment),
         ),
         showDrawerButton: false);
   }
