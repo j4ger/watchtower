@@ -160,15 +160,50 @@ class MockPage extends StatelessWidget {
 Future<void> promptTest() async {
   final String? path = (await FilePicker.platform.pickFiles(
           allowMultiple: false,
-          type: FileType.custom,
-          allowedExtensions: ["csv"],
-          dialogTitle: "Select source file"))
+          type: FileType.any,
+          dialogTitle: "Select RECORDS filelist file"))
       ?.files[0]
       .path;
   if (path == null) {
     snackbar("Cancelled", "No file was selected.");
     return;
   }
+
+  final pathSplit = path.split('/');
+  final pathBase = pathSplit.take(pathSplit.length - 1).join('/');
+
+  final file = File(path);
+  final content = await file.readAsString();
+  final result = <String>[];
+
+  int sampleCountSum = 0, fpSum = 0, fnSum = 0;
+  for (String line
+      in content.split('\n').where((line) => line.trim().isNotEmpty)) {
+    final filename = "$pathBase/$line.csv";
+    final (sampleCount, fp, fn) = await test(filename);
+    final totalFailures = fp + fn;
+    final failRate = (totalFailures / sampleCount * 100).toStringAsFixed(2);
+    sampleCountSum += sampleCount;
+    fpSum += fp;
+    fnSum += fn;
+    result.add("$line, $sampleCount, $fp, $fn, $totalFailures, $failRate%");
+  }
+  final failureSum = fpSum + fnSum;
+  final failureRate = (failureSum / sampleCountSum * 100).toStringAsFixed(2);
+  final sumConclusion =
+      "overall, $sampleCountSum, $fpSum, $fnSum, $failureSum, $failureRate%";
+  print("Benchmark complete: $sumConclusion");
+  result.add(sumConclusion);
+
+  final outputPath = "$pathBase/benchmark.csv";
+  final outputFile = File(outputPath);
+  await outputFile.writeAsString(result.join('\n'));
+
+  print("Benchmark result written to $outputPath");
+}
+
+Future<(int, int, int)> test(String path) async {
+  // sampleCount, FP, FN
   final file = File(path);
   final content = file
       .readAsStringSync(); // TODO: might block for a while, use async and loading indicator to improve experience
@@ -233,6 +268,8 @@ Future<void> promptTest() async {
       "  falseNegative: $falseNegative; FNRate: ${falseNegative / detectCount}");
   print(
       "  falsePositive: $falsePositive; FPRate: ${falsePositive / detectCount}");
+
+  return (detectCount, falseNegative, falsePositive);
 }
 
 const benchmarkToleration = 80;
