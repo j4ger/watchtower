@@ -24,10 +24,18 @@ while IFS= read -r file_name; do
     echo "Processing $full_path..."
 
     # Extract record
-    $rdsamp -c -H -f 0 -v -pS -r $file_name > "$file_name.csv"
+    csv_out="$file_name.csv"
+    if [[ -f $csv_out ]]; then
+      rm -f $csv_out
+    fi
+    $rdsamp -c -H -f 0 -v -pS -r $file_name > $csv_out
 
     # Extract annotations
-    $rdann -c 0 -f 0 -v -a atr -r $file_name > "$file_name.txt"
+    txt_out="$file_name.txt"
+    if [[ -f $txt_out ]]; then
+      rm -rf $txt_out
+    fi
+    $rdann -c 0 -f 0 -v -a atr -r $file_name > $txt_out
 
 done < "$file_list"
 
