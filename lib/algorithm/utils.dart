@@ -1,4 +1,5 @@
 import '../ecg_data.dart';
+import 'dart:math';
 
 List<ECGData> movingWindowAverage(List<ECGData> input, int windowSize,
     {int compensationLength = 0}) {
@@ -63,6 +64,8 @@ List<int> intListDiff(List<int> input) {
   return differences;
 }
 
+int intListSum(List<int> input) => input.reduce((a, b) => a + b);
+
 List<ECGData> arraySquare(List<ECGData> input) =>
     input.map((e) => ECGData(e.timestamp, e.value * e.value)).toList();
 
@@ -86,6 +89,37 @@ List<ECGData> arrayFindPeaks(List<ECGData> a, {double? threshold}) {
       }
     }
   }
+  return result;
+}
+
+int arrayFindPeakByProminence(List<ECGData> input) {
+  int result = -1;
+  double maxProminence = double.negativeInfinity;
+
+  for (int i = 1; i < input.length - 1; i++) {
+    final value = input[i].value;
+    if (value > input[i - 1].value && value > input[i + 1].value) {
+      // Potential peak
+      double leftBase = input[i - 1].value;
+      double rightBase = input[i + 1].value;
+      for (int j = i - 2; j >= 0; j--) {
+        if (input[j].value < leftBase) {
+          leftBase = input[j].value;
+        }
+      }
+      for (int j = i + 2; j < input.length; j++) {
+        if (input[j].value < rightBase) {
+          rightBase = input[j].value;
+        }
+      }
+      double prominence = value - max(leftBase, rightBase);
+      if (prominence > maxProminence) {
+        result = i;
+        maxProminence = prominence;
+      }
+    }
+  }
+
   return result;
 }
 
@@ -132,5 +166,11 @@ List<ECGData> arrayMwaPadless(List<ECGData> input, int windowSize) {
 
   return result;
 }
+
+List<ECGData> arrayMultiply(List<ECGData> input, double multiplier) =>
+    input.map((element) {
+      element.value = element.value * multiplier;
+      return element;
+    }).toList();
 
 // TODO: rewrite using iterators

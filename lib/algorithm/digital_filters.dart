@@ -7,7 +7,7 @@ import 'package:fili.dart/calc_cascades.dart';
 
 import '../ecg_data.dart';
 
-const filterOrder = 3;
+const filterOrder = 5;
 
 class DigitalFilter {
   late final IirFilter filter;

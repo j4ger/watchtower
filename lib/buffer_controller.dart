@@ -24,8 +24,8 @@ const defaultInterval = Duration(milliseconds: delayMs);
 class BufferController extends GetxController
     with GetSingleTickerProviderStateMixin {
   final List<Pipeline>? pipelines;
-  // final Detector? detector;
-  final PtPeakDetector detector;
+  final Detector detector;
+  // final PtPeakDetector detector;
 
   BufferController({this.pipelines, required this.detector});
 
@@ -129,10 +129,10 @@ class BufferController extends GetxController
     processData.value = newProcessData;
 
     if (debug.value) {
-      preprocessedData.value = detector
-          .preprocess(newProcessData)
-          .map((e) => ECGData(e.timestamp, e.value * 400))
-          .toList();
+      // preprocessedData.value = detector
+      //   .preprocess(newProcessData)
+      // .map((e) => ECGData(e.timestamp, e.value * 400))
+      //  .toList();
     }
 
     finalAnnotation.value = detector.detect(newProcessData);

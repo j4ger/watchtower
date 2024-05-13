@@ -9,6 +9,8 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'algorithm/ECG/clean.dart';
+import 'algorithm/ECG/find_peaks.dart';
 import 'buffer_controller.dart';
 import 'ecg_data.dart';
 import 'mock_device.dart';
@@ -177,7 +179,8 @@ Future<void> promptTest() async {
       .mapIndexed((index, element) => ECGData(index, element[1] as double))
       .toList();
 
-  final detectResult = processWithPT(data);
+  final detectResult = detectWithNk(data);
+  final detectCount = detectResult.length;
 
   final correctResult = <int>[];
 
@@ -201,6 +204,8 @@ Future<void> promptTest() async {
   int falseNegative = 0;
   int falsePositive = 0;
 
+  final missed = <int>[];
+
   outer:
   for (final timestamp in correctResult) {
     for (final (index, detection) in detectResult.indexed) {
@@ -212,17 +217,30 @@ Future<void> promptTest() async {
       }
     }
     falseNegative += 1;
+    missed.add(timestamp);
   }
 
   falsePositive = detectResult.length;
 
   print("Benchmark result for record $path:");
-  print("  total: ${detectResult.length}");
+  print("  total: $detectCount");
   print("  correct: $correct;");
+
+  print("  missed: $missed");
+  print("  imagined: $detectResult");
+
   print(
-      "  falseNegative: $falseNegative; FNRate: ${falseNegative / detectResult.length}");
+      "  falseNegative: $falseNegative; FNRate: ${falseNegative / detectCount}");
   print(
-      "  falsePositive: $falsePositive; FPRate: ${falsePositive / detectResult.length}");
+      "  falsePositive: $falsePositive; FPRate: ${falsePositive / detectCount}");
 }
 
-const benchmarkToleration = 100;
+const benchmarkToleration = 80;
+
+List<int> detectWithNk(List<ECGData> input) {
+  final preprocessor = CleanBP(fs);
+  final detector = NkPeakDetector(fs);
+  final preprocessed = preprocessor.apply(input);
+  final result = detector.rawDetect(preprocessed, preprocessed);
+  return result;
+}

@@ -8,8 +8,10 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'algorithm/ECG/clean.dart';
 import 'algorithm/ECG/find_peaks.dart';
+import 'algorithm/utils.dart';
 import 'bluetooth_page.dart';
 import 'buffer_controller.dart';
+import 'ecg_data.dart';
 import 'record_page.dart';
 import 'mock_page.dart';
 import 'view_record_page.dart';
@@ -75,9 +77,9 @@ class App extends StatelessWidget {
 // TODO: unified error logging
 
 const fs =
-    333; // for csv data exported from https://archive.physionet.org/cgi-bin/atm/ATM
-final pipelines = [CleanPT(fs)];
-final detector = PtPeakDetector(fs);
+    360; // for csv data exported from https://archive.physionet.org/cgi-bin/atm/ATM
+final pipelines = [CleanNK(fs)];
+final detector = NkPeakDetector(fs);
 
 // TODO: move bluetoothpage and mockpage into separate pages
 // TODO: hide signalpage

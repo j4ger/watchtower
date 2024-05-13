@@ -14,6 +14,9 @@ class ECGData {
     index = timestamp % bufferLength;
   }
 
+  @override
+  String toString() => "ECGData of $value at $timestamp.";
+
   static List<ECGData> fromPacket(Uint8List data) {
     final bytes = ByteData.sublistView(data);
     List<ECGData> result = [];
