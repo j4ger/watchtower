@@ -146,7 +146,83 @@ class MockPage extends StatelessWidget {
                           await recordController.addRecord(record);
                         }
                       }),
-                  child: const Text("Load file to database"))
+                  child: const Text("Load file to database")),
+              const SizedBox(height: 10),
+              FilledButton(
+                  onPressed: () async => awaitWithOverlay(promptTest),
+                  child: const Text("Begin Benchmarking"))
             ])));
   }
 }
+
+Future<void> promptTest() async {
+  final String? path = (await FilePicker.platform.pickFiles(
+          allowMultiple: false,
+          type: FileType.custom,
+          allowedExtensions: ["csv"],
+          dialogTitle: "Select source file"))
+      ?.files[0]
+      .path;
+  if (path == null) {
+    snackbar("Cancelled", "No file was selected.");
+    return;
+  }
+  final file = File(path);
+  final content = file
+      .readAsStringSync(); // TODO: might block for a while, use async and loading indicator to improve experience
+  final csv = const CsvToListConverter(eol: "\n").convert(content);
+
+  final data = csv
+      .sublist(2)
+      .mapIndexed((index, element) => ECGData(index, element[1] as double))
+      .toList();
+
+  final detectResult = processWithPT(data);
+
+  final correctResult = <int>[];
+
+  try {
+    final correctPath = "${path.substring(0, path.length - 3)}txt";
+    final file = File(correctPath);
+    final content = await file.readAsString();
+    final lines = content.trim().split("\n");
+
+    for (String line in lines.skip(1)) {
+      final values =
+          line.split(RegExp(r'\s+')).map((value) => value.trim()).toList();
+      String sampleValue = values[2];
+      correctResult.add(int.parse(sampleValue));
+    }
+  } on PlatformException catch (e) {
+    snackbar("Error", "Failed to open file dialog: $e");
+  }
+
+  int correct = 0;
+  int falseNegative = 0;
+  int falsePositive = 0;
+
+  outer:
+  for (final timestamp in correctResult) {
+    for (final (index, detection) in detectResult.indexed) {
+      if (timestamp - benchmarkToleration < detection &&
+          detection < timestamp + benchmarkToleration) {
+        detectResult.removeAt(index);
+        correct += 1;
+        continue outer;
+      }
+    }
+    falseNegative += 1;
+  }
+
+  falsePositive = detectResult.length;
+
+  print("Benchmark result for record $path:");
+  print("  total: ${detectResult.length}");
+  print("  correct: $correct;");
+  print(
+      "  falseNegative: $falseNegative; FNRate: ${falseNegative / detectResult.length}");
+  print(
+      "  falsePositive: $falsePositive; FPRate: ${falsePositive / detectResult.length}");
+}
+
+const benchmarkToleration = 100;
