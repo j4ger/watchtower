@@ -88,3 +88,49 @@ List<ECGData> arrayFindPeaks(List<ECGData> a, {double? threshold}) {
   }
   return result;
 }
+
+List<ECGData> arrayGradient(List<ECGData> input) {
+  final result = <ECGData>[];
+  result.add(ECGData(input[0].timestamp, input[1].value - input[0].value));
+  for (int i = 0; i < input.length - 2; i++) {
+    result.add(ECGData(
+        input[i + 1].timestamp, (input[i + 2].value - input[i].value) / 2));
+  }
+  result.add(ECGData(
+      input.last.timestamp, input.last.value - input[input.length - 2].value));
+  return result;
+}
+
+List<ECGData> arrayAbs(List<ECGData> input) => input.map((data) {
+      data.value = data.value.abs();
+      return data;
+    }).toList();
+
+List<ECGData> arrayMwaPadless(List<ECGData> input, int windowSize) {
+  final paddingLength = windowSize - 1;
+
+  final result = <ECGData>[];
+
+  double sum = 0;
+  for (int i = 0; i < paddingLength; i++) {
+    sum = 0;
+    for (int j = 0; j <= i; j++) {
+      sum += input[j].value;
+    }
+    result.add(ECGData(input[i].timestamp, sum / (i + 1)));
+  }
+
+  for (int i = paddingLength; i < input.length; i++) {
+    final removeIndex = i - windowSize;
+    if (removeIndex >= 0) {
+      // TODO: optimize this
+      sum -= input[removeIndex].value;
+    }
+    sum += input[i].value;
+    result.add(ECGData(input[i].timestamp, sum / windowSize));
+  }
+
+  return result;
+}
+
+// TODO: rewrite using iterators
