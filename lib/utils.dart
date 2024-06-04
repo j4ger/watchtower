@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
 
+/// shows a snackbar
+/// should be used for infos
 void snackbar(String title, String message) {
   Get.showSnackbar(
     GetSnackBar(
@@ -12,6 +14,9 @@ void snackbar(String title, String message) {
   );
 }
 
+/// shows an overlay covering the entire screen
+/// blocks user interaction with ui below
+/// the overlay disappears when the `asyncFunction` returns
 Future<T> awaitWithOverlay<T>(
   Future<T> Function() asyncFunction,
 ) async =>

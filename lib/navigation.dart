@@ -6,6 +6,10 @@ import 'record_page/record_page.dart';
 import 'signal_page/signal_page.dart';
 import 'view_record_page/view_record_page.dart';
 
+/// start with bluetooth view
+const entryURL = "/bluetooth";
+
+/// all pages should be provided
 final List<AppPage> navigationList = [
   AppPage("bluetooth", "Setup Bluetooth Device", () => BluetoothPage(),
       Icons.devices_other, Icons.devices_other_outlined),
@@ -21,22 +25,34 @@ final List<AppPage> navigationList = [
       hidden: true)
 ];
 
+/// hide pages marked with "hidden: true"
 final List<AppPage> shownNavigationList =
     navigationList.where((item) => !item.hidden).toList();
 
 class AppPage {
+  /// internal name for navigation
   final String name;
+
+  /// appbar title
   final String title;
+
+  /// page content (created with makePage function)
   final Widget Function() page;
+
+  /// icon for navigation drawer
   final IconData icon;
+
+  /// icon when selected
   final IconData selectedIcon;
+
+  /// should this page be hidden in navigationDrawer
   final bool hidden;
+
   AppPage(this.name, this.title, this.page, this.icon, this.selectedIcon,
       {this.hidden = false});
 }
 
-// TODO: extract components into their own files
-
+/// appbar implementation
 class DefaultAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final bool showDrawerButton;
@@ -64,6 +80,8 @@ class DefaultAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Size preferredSize = const Size.fromHeight(kToolbarHeight);
 }
 
+/// function for making a page
+/// injects appbar and routing information
 Widget makePage(String title, Widget body,
         {bool showDrawerButton = true,
         List<Widget> actions = const [],
