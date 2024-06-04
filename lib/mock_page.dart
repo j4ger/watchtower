@@ -195,7 +195,7 @@ Future<void> promptTest() async {
   print("Benchmark complete: $sumConclusion");
   result.add(sumConclusion);
 
-  final outputPath = "$pathBase/benchmark.csv";
+  final outputPath = "$pathBase/benchmark-nk-2.csv";
   final outputFile = File(outputPath);
   await outputFile.writeAsString(result.join('\n'));
 
@@ -277,6 +277,14 @@ const benchmarkToleration = 80;
 List<int> detectWithNk(List<ECGData> input) {
   final preprocessor = CleanBP(fs);
   final detector = NkPeakDetector(fs);
+  final preprocessed = preprocessor.apply(input);
+  final result = detector.rawDetect(preprocessed, preprocessed);
+  return result;
+}
+
+List<int> detectWithPt(List<ECGData> input) {
+  final preprocessor = CleanPT(fs);
+  final detector = PtPeakDetector(fs);
   final preprocessed = preprocessor.apply(input);
   final result = detector.rawDetect(preprocessed, preprocessed);
   return result;

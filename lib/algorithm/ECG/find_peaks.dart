@@ -194,7 +194,8 @@ class NkPeakDetector extends Detector {
       }
 
       // TODO: filter QRS sequences that have at lease two peaks inside
-      final peakIndex = arrayFindPeakByProminence(ListSlice(input, begin, end));
+      final peakIndex =
+          arrayFindPeakByProminence(ListSlice(smoothedBuffer, begin, end));
       if (peakIndex == -1) {
         print("start: $begin, end: $end, dropped for no peak found");
         // no peak found, skip
