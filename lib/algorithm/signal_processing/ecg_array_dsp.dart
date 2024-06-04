@@ -1,5 +1,6 @@
-import '../ecg_data.dart';
 import 'dart:math';
+
+import '../../ecg_data.dart';
 
 List<ECGData> movingWindowAverage(List<ECGData> input, int windowSize,
     {int compensationLength = 0}) {
@@ -55,16 +56,6 @@ List<ECGData> arrayDiff(List<ECGData> input) {
 
   return differences;
 }
-
-List<int> intListDiff(List<int> input) {
-  List<int> differences = [];
-  for (int i = 0; i < input.length - 1; i++) {
-    differences.add(input[i + 1] - input[i]);
-  }
-  return differences;
-}
-
-int intListSum(List<int> input) => input.reduce((a, b) => a + b);
 
 List<ECGData> arraySquare(List<ECGData> input) =>
     input.map((e) => ECGData(e.timestamp, e.value * e.value)).toList();

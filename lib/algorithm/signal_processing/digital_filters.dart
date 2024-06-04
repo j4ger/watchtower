@@ -5,7 +5,7 @@ import 'package:fili.dart/iir_coeffs.dart';
 import 'package:fili.dart/iir_filter.dart';
 import 'package:fili.dart/calc_cascades.dart';
 
-import '../ecg_data.dart';
+import '../../ecg_data.dart';
 
 const filterOrder = 5;
 

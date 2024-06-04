@@ -1,12 +1,14 @@
+// TODO: should probably move this to bluetooth-related directory
+
 import 'dart:async';
 
 import 'package:bluetooth_low_energy/bluetooth_low_energy.dart';
 import "package:get/get.dart";
-import 'package:watchtower/bluetooth_device.dart';
-import 'package:watchtower/buffer_controller.dart';
-import 'package:watchtower/ecg_data.dart';
 
-import 'main.dart';
+import '../bluetooth_page/bluetooth_device.dart';
+import '../ecg_data.dart';
+import '../utils.dart';
+import 'buffer_controller.dart';
 
 class SignalController extends GetxController {
   final connectionState = false.obs;

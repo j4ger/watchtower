@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 
-import 'main.dart';
+import '../mock_page/mock_device.dart';
+import '../navigation.dart';
 import 'buffer_controller.dart';
 import 'graph.dart';
-import 'mock_device.dart';
 import 'signal_controller.dart';
-import 'mock_page.dart';
+import 'signal_source.dart';
 
 class SignalPage extends StatelessWidget {
-  final Target target = Get.arguments;
+  final SignalSource target = Get.arguments;
 
   SignalPage({super.key});
 
@@ -129,5 +129,3 @@ class SignalPage extends StatelessWidget {
                 ))));
   }
 }
-
-// TODO: use theme.colorscheme

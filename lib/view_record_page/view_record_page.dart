@@ -1,85 +1,13 @@
-import 'dart:io';
-
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter/services.dart';
 import 'package:community_charts_flutter/community_charts_flutter.dart'
     as charts;
 
-import 'buffer_controller.dart';
-import 'ecg_data.dart';
-import 'graph.dart';
-import 'record_page.dart';
-import 'main.dart';
-
-class ViewRecordController extends GetxController {
-  late final Record record;
-  final Rx<List<int>?> correctAnnotations = null.obs;
-  final DateTime startTime;
-  final loading = true.obs;
-
-  final RecordController recordController = Get.find();
-
-  ViewRecordController(this.startTime);
-
-  @override
-  void onInit() {
-    super.onInit();
-    initRecord();
-    SystemChrome.setPreferredOrientations(
-        [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
-  }
-
-  Future<void> initRecord() async {
-    final result = await recordController.getRecordByStartTime(startTime);
-    record = result;
-    loading.value = false;
-  }
-
-  Future<void> promptLoadCorrectAnnotations() async {
-    try {
-      final String? path = (await FilePicker.platform.pickFiles(
-              allowMultiple: false,
-              type: FileType.custom,
-              allowedExtensions: ["txt"],
-              dialogTitle: "Select annotation file"))
-          ?.files[0]
-          .path;
-      if (path != null) {
-        final file = File(path);
-        final content = await file.readAsString();
-        final result = <int>[];
-        List<String> lines = content.trim().split("\n");
-
-        // Assuming the header is always present and the format is consistent
-        List<String> headers = lines.first
-            .split(RegExp(r'\s+'))
-            .map((header) => header.trim())
-            .toList();
-        int sampleIndex = headers.indexOf("Sample");
-
-        for (String line in lines.skip(1)) {
-          List<String> values =
-              line.split(RegExp(r'\s+')).map((value) => value.trim()).toList();
-          if (values.length > sampleIndex) {
-            String sampleValue = values[sampleIndex];
-            result.add(int.parse(sampleValue));
-          }
-        }
-
-        correctAnnotations.value = result;
-      } else {
-        snackbar("Cancelled", "No file was selected.");
-      }
-    } on PlatformException catch (e) {
-      snackbar("Error", "Failed to open file dialog: $e");
-    }
-  }
-
-  int get timestampStart => record.data.first.timestamp;
-  int get timestampEnd => timestampStart + displayTimestampRange;
-}
+import '../constants.dart';
+import '../ecg_data.dart';
+import '../navigation.dart';
+import 'view_record_controller.dart';
 
 class ViewRecordPage extends StatelessWidget {
   late final DateTime startTime;
@@ -121,8 +49,8 @@ class ViewRecordPage extends StatelessWidget {
                         })),
                     primaryMeasureAxis: const charts.NumericAxisSpec(
                         renderSpec: charts.NoneRenderSpec(),
-                        viewport: charts.NumericExtents(
-                            graphLowerLimit, graphUpperLimit)),
+                        viewport:
+                            charts.NumericExtents(lowerLimit, upperLimit)),
                     behaviors: [
                       charts.PanAndZoomBehavior(),
                       if (controller.record.annotations.isNotEmpty)
@@ -157,5 +85,3 @@ class ViewRecordPage extends StatelessWidget {
         showDrawerButton: false);
   }
 }
-
-const displayTimestampRange = bufferLength;

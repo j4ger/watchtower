@@ -3,8 +3,10 @@ import 'dart:io';
 
 import 'package:csv/csv.dart';
 import 'package:get/get.dart';
-import 'package:watchtower/buffer_controller.dart';
-import 'package:watchtower/ecg_data.dart';
+
+import '../constants.dart';
+import '../ecg_data.dart';
+import '../signal_page/buffer_controller.dart';
 
 const timerInterval = Duration(milliseconds: delayMs);
 
@@ -37,7 +39,7 @@ class MockController extends GetxController {
 
     int i = 0;
     final List<ECGData> initialData = [];
-    while (i < bufferLength) {
+    while (i < graphBufferLength) {
       initialData.add(getData());
       i++;
     }

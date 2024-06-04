@@ -6,16 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:watchtower/ecg_data.dart';
 
-import 'algorithm/ECG/find_peaks.dart';
-import 'algorithm/pipeline.dart';
-import 'main.dart';
-import 'record_page.dart';
-
-const largeBufferLength = 2500; // 2500 / 250 s^-1 = 10s
-
-const bufferLength = 600;
-const delayMs = 300;
-const packLength = 50;
+import '../record_page/record_controller.dart';
+import '../algorithm/detector.dart';
+import '../algorithm/pipeline.dart';
+import '../constants.dart';
+import '../utils.dart';
 
 const intervalCorrectionRatio = 0.5;
 
@@ -38,7 +33,7 @@ class BufferController extends GetxController
 
   int get cursorIndex => lastPackStart + tween.value;
   int get frameStartTimestamp =>
-      lastPackEndTimestamp - lastPackEndTimestamp % bufferLength;
+      lastPackEndTimestamp - lastPackEndTimestamp % graphBufferLength;
 
   int lastIndex = 0;
 
@@ -49,7 +44,7 @@ class BufferController extends GetxController
   late AnimationController animationController;
   late Animation<int> tween;
 
-  bool get isFilled => buffer.length >= bufferLength;
+  bool get isFilled => buffer.length >= graphBufferLength;
 
   void reset() {
     lastIndex = 0;
@@ -102,11 +97,11 @@ class BufferController extends GetxController
 
   final percentage = 0.0.obs;
   void updatePercentage() {
-    percentage.value = buffer.length / bufferLength;
+    percentage.value = buffer.length / graphBufferLength;
   }
 
   List<ECGData> get actualData =>
-      ListSlice(buffer, lastFreshIndex + 1, bufferLength) +
+      ListSlice(buffer, lastFreshIndex + 1, graphBufferLength) +
       ListSlice(
           buffer,
           0,
@@ -128,6 +123,7 @@ class BufferController extends GetxController
     }
     processData.value = newProcessData;
 
+    // TODO: fix debug view by implementing a way to extract pipeline status
     if (debug.value) {
       // preprocessedData.value = detector
       //   .preprocess(newProcessData)
@@ -165,7 +161,7 @@ class BufferController extends GetxController
           lastIndex = current;
         }
       });
-//    animationController.forward();
+    //    animationController.forward();
   }
 
   @override

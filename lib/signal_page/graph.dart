@@ -2,13 +2,13 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:smooth_counter/smooth_counter.dart';
-import 'package:watchtower/algorithm/ECG/find_peaks.dart';
-import 'package:watchtower/buffer_controller.dart';
 import 'package:community_charts_flutter/community_charts_flutter.dart'
     as charts;
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 
-import 'ecg_data.dart';
+import '../ecg_data.dart';
+import 'buffer_controller.dart';
+import '../constants.dart';
 
 const graphUpperLimit = 2;
 const graphLowerLimit = -2;
@@ -29,9 +29,9 @@ class Graph extends StatelessWidget {
                     final buffer = controller.buffer;
 
                     int freshStart, freshEnd;
-                    if (controller.cursorIndex > bufferLength) {
-                      freshStart = controller.cursorIndex - bufferLength;
-                      freshEnd = bufferLength;
+                    if (controller.cursorIndex > graphBufferLength) {
+                      freshStart = controller.cursorIndex - graphBufferLength;
+                      freshEnd = graphBufferLength;
                     } else {
                       freshStart = 0;
                       freshEnd = controller.cursorIndex;
@@ -43,7 +43,7 @@ class Graph extends StatelessWidget {
 
                     final List<charts.RangeAnnotationSegment<int>>
                         rangeAnnotations = [];
-                    if (staleStart < bufferLength) {
+                    if (staleStart < graphBufferLength) {
                       rangeAnnotations.add(charts.RangeAnnotationSegment(
                           freshEnd,
                           staleStart,
@@ -52,7 +52,7 @@ class Graph extends StatelessWidget {
                     } else {
                       rangeAnnotations.add(charts.RangeAnnotationSegment(
                           freshEnd,
-                          bufferLength - 1,
+                          graphBufferLength - 1,
                           charts.RangeAnnotationAxisType.domain,
                           color: hiddenColor));
                     }
@@ -67,8 +67,8 @@ class Graph extends StatelessWidget {
                           controller.processData.isNotEmpty
                               ? ListSlice(
                                   controller.processData,
-                                  bufferLength - controller.lastFreshIndex,
-                                  bufferLength - 1)
+                                  graphBufferLength - controller.lastFreshIndex,
+                                  graphBufferLength - 1)
                               : [];
                       data.add(charts.Series<ECGData, int>(
                           id: "debug",
@@ -83,8 +83,8 @@ class Graph extends StatelessWidget {
                           controller.preprocessedData.isNotEmpty
                               ? ListSlice(
                                   controller.preprocessedData,
-                                  bufferLength - controller.lastFreshIndex,
-                                  bufferLength - 1)
+                                  graphBufferLength - controller.lastFreshIndex,
+                                  graphBufferLength - 1)
                               : [];
 
                       data.add(charts.Series<ECGData, int>(
@@ -102,7 +102,7 @@ class Graph extends StatelessWidget {
                       if (timestamp < controller.frameStartTimestamp) {
                         continue;
                       }
-                      final index = timestamp % bufferLength;
+                      final index = timestamp % graphBufferLength;
                       final lowerIndex = index - markLength;
                       final upperIndex = index + markLength;
                       if (lowerIndex < controller.cursorIndex &&
@@ -121,12 +121,13 @@ class Graph extends StatelessWidget {
                         measureFn: (ECGData item, _) => item.value,
                         data: ListSlice(buffer, freshStart, freshEnd),
                         colorFn: (_, __) => freshColor));
-                    if (staleStart < bufferLength) {
+                    if (staleStart < graphBufferLength) {
                       data.add(charts.Series<ECGData, int>(
                           id: "stale",
                           domainFn: (ECGData item, _) => item.index,
                           measureFn: (ECGData item, _) => item.value,
-                          data: ListSlice(buffer, staleStart, bufferLength),
+                          data:
+                              ListSlice(buffer, staleStart, graphBufferLength),
                           colorFn: (_, __) => staleColor));
                     }
 
@@ -134,7 +135,8 @@ class Graph extends StatelessWidget {
                       data,
                       animate: false,
                       domainAxis: const charts.NumericAxisSpec(
-                          viewport: charts.NumericExtents(0, bufferLength - 1),
+                          viewport:
+                              charts.NumericExtents(0, graphBufferLength - 1),
                           renderSpec: charts.NoneRenderSpec()),
                       primaryMeasureAxis: const charts.NumericAxisSpec(
                           renderSpec: charts.NoneRenderSpec(),
@@ -238,17 +240,5 @@ class Graph extends StatelessWidget {
 
 const hiddenLength = packLength;
 
-const freshColor = charts.Color(r: 0xdb, g: 0x16, b: 0x16);
-const staleColor = charts.Color(r: 0xee, g: 0xcc, b: 0xcc);
-
-const hiddenColor = charts.Color(r: 0xfe, g: 0xfe, b: 0xfe);
-
-const upperLimit = 1;
-const lowerLimit = -0.8;
-
-const markLength = 40;
-const markColor = charts.Color(r: 0xff, g: 0xbf, b: 0xb8);
-
-const averageLineColor = charts.Color(r: 0xff, g: 0x63, b: 0x61);
 
 // TODO: stale color tween

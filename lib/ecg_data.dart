@@ -1,7 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
-import 'package:watchtower/buffer_controller.dart';
+
+import 'constants.dart';
 
 const packSize = 4 * 2; // 4 bytes for each int and float
 
@@ -11,7 +12,7 @@ class ECGData {
   late int index;
 
   ECGData(this.timestamp, this.value) {
-    index = timestamp % bufferLength;
+    index = timestamp % graphBufferLength;
   }
 
   @override
