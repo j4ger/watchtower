@@ -2,8 +2,8 @@ import 'package:get/get.dart';
 import 'package:community_charts_flutter/community_charts_flutter.dart'
     as charts;
 
-import 'algorithm/ECG/neurokit/clean.dart';
-import 'algorithm/ECG/neurokit/detect.dart';
+import 'algorithm/ECG/pt/clean.dart';
+import 'algorithm/ECG/pt/detect.dart';
 import 'signal_page/buffer_controller.dart';
 import 'record_page/record_controller.dart';
 
@@ -13,8 +13,8 @@ const packLength = 50; // frames in a packet
 const int fs =
     333; // for csv data exported from https://archive.physionet.org/cgi-bin/atm/ATM
 
-final pipelines = [CleanBP(fs)];
-final detector = NkPeakDetector(fs);
+final pipelines = [CleanPT(fs)];
+final detector = PtPeakDetector(fs);
 
 const int delayMs = 1000 ~/ fs * packLength;
 
