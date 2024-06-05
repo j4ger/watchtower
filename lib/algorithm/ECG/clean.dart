@@ -2,6 +2,7 @@ import '../../ecg_data.dart';
 import '../pipeline.dart';
 import '../signal_processing/ecg_array_dsp.dart';
 
+/// removes powerline interference
 class CleanPowerline extends Pipeline {
   @override
   final name = "Clean powerline interference";

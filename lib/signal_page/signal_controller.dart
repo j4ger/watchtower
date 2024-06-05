@@ -10,6 +10,7 @@ import '../ecg_data.dart';
 import '../utils.dart';
 import 'buffer_controller.dart';
 
+/// listens and decodes BLE data notifications
 class SignalController extends GetxController {
   final connectionState = false.obs;
   final Peripheral device;
@@ -40,6 +41,8 @@ class SignalController extends GetxController {
           return;
         }
         final packet = eventArgs.value;
+
+        /// packet decode
         final data = ECGData.fromPacket(packet);
         bufferController.extend(data);
       },

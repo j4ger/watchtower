@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+# this script generates csv files based on a file list
+# it expects a file named "RECORDS" in $pwd
+# should work without tweaks when placed inside the original MIT-BIH dataset directory
+
+# requirements:
+# wfdb toolchain compiled & placed in $PATH
+
 wfdb_base="../../wfdb-10.7.0/build/bin"
 rdsamp="$wfdb_base/rdsamp"
 rdann="$wfdb_base/rdann"

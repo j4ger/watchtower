@@ -1,3 +1,6 @@
+/// controls graph render process
+library;
+
 import 'dart:async';
 
 import 'package:collection/collection.dart';
@@ -12,44 +15,68 @@ import '../algorithm/pipeline.dart';
 import '../constants.dart';
 import '../utils.dart';
 
+/// the ratio used to update predicted `nextPacketInterval`
 const intervalCorrectionRatio = 0.5;
 
 const defaultInterval = Duration(milliseconds: delayMs);
 
+/// `GetSingleTickerProviderStateMixin` is used to provide ticker for cursor tween AnimationController
 class BufferController extends GetxController
     with GetSingleTickerProviderStateMixin {
   final List<Pipeline>? pipelines;
   final Detector detector;
-  // final PtPeakDetector detector;
 
   BufferController({this.pipelines, required this.detector});
 
+  /// this is currently unimplemented, until a better way to extract pipeline mid-stage status is decided
   final debug = false.obs;
 
+  /// actual buffer for rendering
+  /// a fixed length list to save up memory
+  /// every write should perform according to a calculated `index`
+  /// in order to achieve a wipe-off/overwrite effect
   final List<ECGData> buffer = [];
 
-  DateTime? lastTimestamp;
+  /// the time when the last packet arrived
+  DateTime? lastPackArrivalTime;
+
+  /// predicted interval of packets
   Duration interval = defaultInterval;
 
-  int get cursorIndex => lastPackStart + tween.value;
-  int get frameStartTimestamp =>
-      lastPackEndTimestamp - lastPackEndTimestamp % graphBufferLength;
+  /// the current index of cursor
+  int get cursorIndex => firstFreshIndex + tween.value;
 
+  /// the timestamp of the first frame, of the latest packet
+  int get frameStartTimestamp =>
+      lastFreshTimestamp - lastFreshTimestamp % graphBufferLength;
+
+  /// the cursor index, when the ticker ticked last time
+  /// used to determine whether a rerender should be triggered
   int lastIndex = 0;
 
+  /// the index of the last frame, of the latest packet
   int lastFreshIndex = 0;
-  int lastPackStart = 0;
-  int lastPackEndTimestamp = 0;
 
+  /// the timestamp of the last frame, of the latest packet
+  int lastFreshTimestamp = 0;
+
+  /// the index of the first frame, of the latest packet
+  int firstFreshIndex = 0;
+
+  /// controls the IntTween
   late AnimationController animationController;
+
+  /// tweens the cursor between packets
   late Animation<int> tween;
 
+  /// whether the initial data has been filled
   bool get isFilled => buffer.length >= graphBufferLength;
 
+  /// reset everything
   void reset() {
     lastIndex = 0;
     lastFreshIndex = 0;
-    lastPackStart = 0;
+    firstFreshIndex = 0;
     buffer.clear();
     interval = defaultInterval;
 
@@ -60,6 +87,7 @@ class BufferController extends GetxController
     intervalHistory.clear();
   }
 
+  /// push a frame into the buffer
   void _add(ECGData item) {
     if (isFilled) {
       buffer[item.index] = (item);
@@ -67,39 +95,47 @@ class BufferController extends GetxController
       buffer.add(item);
       updatePercentage();
     }
-    if (state() == BufferControllerState.recording) {
-      recordBuffer.add(item);
-    }
   }
 
+  /// pushes a list of frames into the buffer
   void extend(List<ECGData> items) {
     // TODO: optimize this
     for (ECGData item in items) {
       _add(item);
     }
-    // largeBuffer.addAll(items);
+    if (state() == BufferControllerState.recording) {
+      recordBuffer.addAll(items);
+    }
+
     final now = DateTime.now();
-    if (lastTimestamp != null) {
-      final delta = now.difference(lastTimestamp!);
+    if (lastPackArrivalTime != null) {
+      /// update interval prediction
+      final delta = now.difference(lastPackArrivalTime!);
       interval = interval * (1 - intervalCorrectionRatio) +
           delta * intervalCorrectionRatio;
       animationController.duration = interval;
+
+      /// let the animation catch on
       animationController.reset();
       animationController.forward();
     }
-    lastTimestamp = now;
+
+    lastPackArrivalTime = now;
     lastFreshIndex = items.last.index;
-    lastPackStart = items.first.index;
-    lastPackEndTimestamp = items.last.timestamp;
+    firstFreshIndex = items.first.index;
+    lastFreshTimestamp = items.last.timestamp;
 
     process();
   }
 
+  /// represents how full is the buffer
+  /// is this really necessary?
   final percentage = 0.0.obs;
   void updatePercentage() {
     percentage.value = buffer.length / graphBufferLength;
   }
 
+  /// cuts and shifts the buffer so that frames are sorted by their timestamp
   List<ECGData> get actualData =>
       ListSlice(buffer, lastFreshIndex + 1, graphBufferLength) +
       ListSlice(
@@ -108,12 +144,22 @@ class BufferController extends GetxController
           lastFreshIndex +
               1); // TODO: optimize this by implementing an alternative indexed read
 
+  /// data after pipeline process
   final processData = <ECGData>[].obs;
+
+  /// data after detector preprocessing, currently unused
   final preprocessedData = <ECGData>[].obs;
+
+  /// detector result
   final finalAnnotation = <int>[].obs;
+
+  /// the timestamp of the last r-peak
   int lastBeatTimestamp = 0;
+
+  /// data for interval history graph
   final intervalHistory = <(int, int)>[].obs;
 
+  /// apply pipeline and detection
   void process() {
     List<ECGData> newProcessData = actualData;
     if (pipelines != null) {
@@ -147,8 +193,10 @@ class BufferController extends GetxController
     }
   }
 
+  /// proxy heartrate from detector
   Rx<double?> get heartRate => detector.heartRate;
 
+  /// initialize tween controller
   @override
   void onInit() {
     super.onInit();
@@ -164,15 +212,19 @@ class BufferController extends GetxController
     //    animationController.forward();
   }
 
+  /// dispose tween controller
   @override
   void dispose() {
     animationController.dispose();
     super.dispose();
   }
 
+  /// record state
   final state = BufferControllerState.normal.obs;
   DateTime? recordStartTime;
   final recordDuration = 0.obs;
+
+  /// a timer for displaying record duration
   Timer? recordDurationTimer;
   final List<ECGData> recordBuffer = [];
 

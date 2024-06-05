@@ -10,8 +10,8 @@ import '../ecg_data.dart';
 import 'buffer_controller.dart';
 import '../constants.dart';
 
-const graphUpperLimit = 2;
-const graphLowerLimit = -2;
+/// the length of the hidden segment
+const hiddenLength = packLength;
 
 class Graph extends StatelessWidget {
   final BufferController controller = Get.find();
@@ -41,6 +41,7 @@ class Graph extends StatelessWidget {
 
                     final List<charts.Series<ECGData, int>> data = [];
 
+                    /// for hidden segment
                     final List<charts.RangeAnnotationSegment<int>>
                         rangeAnnotations = [];
                     if (staleStart < graphBufferLength) {
@@ -62,6 +63,7 @@ class Graph extends StatelessWidget {
                           color: hiddenColor));
                     }
 
+                    /// debug view (unimplemented)
                     if (controller.debug.value) {
                       final List<ECGData> processData =
                           controller.processData.isNotEmpty
@@ -97,6 +99,7 @@ class Graph extends StatelessWidget {
                               const charts.Color(r: 0x12, g: 0x16, b: 0xff)));
                     }
 
+                    /// for annotations
                     final finalAnnotation = controller.finalAnnotation;
                     for (final timestamp in finalAnnotation) {
                       if (timestamp < controller.frameStartTimestamp) {
@@ -115,12 +118,15 @@ class Graph extends StatelessWidget {
                       }
                     }
 
+                    /// fresh frames
                     data.add(charts.Series<ECGData, int>(
                         id: "fresh",
                         domainFn: (ECGData item, _) => item.index,
                         measureFn: (ECGData item, _) => item.value,
                         data: ListSlice(buffer, freshStart, freshEnd),
                         colorFn: (_, __) => freshColor));
+
+                    /// stale frames
                     if (staleStart < graphBufferLength) {
                       data.add(charts.Series<ECGData, int>(
                           id: "stale",
@@ -140,8 +146,8 @@ class Graph extends StatelessWidget {
                           renderSpec: charts.NoneRenderSpec()),
                       primaryMeasureAxis: const charts.NumericAxisSpec(
                           renderSpec: charts.NoneRenderSpec(),
-                          viewport: charts.NumericExtents(
-                              graphLowerLimit, graphUpperLimit)),
+                          viewport:
+                              charts.NumericExtents(lowerLimit, upperLimit)),
                       behaviors: [charts.RangeAnnotation(rangeAnnotations)],
                     );
                   })),
@@ -237,8 +243,5 @@ class Graph extends StatelessWidget {
         )
       ]);
 }
-
-const hiddenLength = packLength;
-
 
 // TODO: stale color tween

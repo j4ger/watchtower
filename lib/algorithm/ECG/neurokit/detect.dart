@@ -4,6 +4,7 @@ import '../../../ecg_data.dart';
 import '../../detector.dart';
 import '../../signal_processing/ecg_array_dsp.dart';
 
+/// adaped from: https://neuropsychology.github.io/NeuroKit/functions/ecg.html#ecg-peaks
 class NkPeakDetector extends Detector {
   @override
   final String name = "biopeaks detector";

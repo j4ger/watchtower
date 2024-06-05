@@ -12,9 +12,13 @@ import '../algorithm/ECG/neurokit/clean.dart';
 import '../algorithm/ECG/pt/detect.dart';
 import '../algorithm/ECG/neurokit/detect.dart';
 
+/// determines how far off from a human annotation is acceptable
 const benchmarkToleration = 80;
+
+/// sample rate of benchmark input files
 const fs = 360;
 
+/// prompt user to select file, begin a benchmark
 Future<void> promptBench() async {
   final String? path = (await FilePicker.platform.pickFiles(
           allowMultiple: false,
@@ -53,6 +57,7 @@ Future<void> promptBench() async {
   print("Benchmark complete: $sumConclusion");
   result.add(sumConclusion);
 
+  /// path to write benchmark result to
   final outputPath = "$pathBase/benchmark-nk-2.csv";
   final outputFile = File(outputPath);
   await outputFile.writeAsString(result.join('\n'));
@@ -60,6 +65,7 @@ Future<void> promptBench() async {
   print("Benchmark result written to $outputPath");
 }
 
+/// benchmark procedure for a single record
 Future<(int, int, int)> bench(String path) async {
   // sampleCount, FP, FN
   final file = File(path);
@@ -130,6 +136,7 @@ Future<(int, int, int)> bench(String path) async {
   return (detectCount, falseNegative, falsePositive);
 }
 
+/// preprocess & detect with neurokit
 List<int> detectWithNk(List<ECGData> input) {
   final preprocessor = CleanBP(fs);
   final detector = NkPeakDetector(fs);
@@ -138,6 +145,7 @@ List<int> detectWithNk(List<ECGData> input) {
   return result;
 }
 
+/// preprocess & detect with pan-tompkins
 List<int> detectWithPt(List<ECGData> input) {
   final preprocessor = CleanPT(fs);
   final detector = PtPeakDetector(fs);

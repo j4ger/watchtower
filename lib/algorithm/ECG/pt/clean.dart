@@ -2,6 +2,7 @@ import '../../../ecg_data.dart';
 import '../../pipeline.dart';
 import '../../signal_processing/digital_filters.dart';
 
+/// pre-processing from the original pt1985 work
 class CleanPT extends Pipeline {
   @override
   final name = "Pan-Tompkins.clean";

@@ -11,6 +11,7 @@ import 'signal_controller.dart';
 import 'signal_source.dart';
 
 class SignalPage extends StatelessWidget {
+  /// determines signal source type based on router arguments
   final SignalSource target = Get.arguments;
 
   SignalPage({super.key});

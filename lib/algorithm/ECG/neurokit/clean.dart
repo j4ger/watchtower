@@ -2,6 +2,7 @@ import '../../../ecg_data.dart';
 import '../../pipeline.dart';
 import '../../signal_processing/digital_filters.dart';
 
+/// adapted from: https://neuropsychology.github.io/NeuroKit/functions/ecg.html#preprocessing
 class CleanBP extends Pipeline {
   @override
   final name = "Biosppy.clean";
